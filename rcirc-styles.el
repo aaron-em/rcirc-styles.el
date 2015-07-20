@@ -318,8 +318,10 @@ invoked outside that context."
   ;; ...then add our own hook that does all our markup.
   (add-hook 'rcirc-markup-text-functions 'rcirc-styles-markup-styles))
 
-;; activate package once init is complete, to ensure we catch and
-;; supersede rcirc-controls if installed
+;; activate package on load
+(rcirc-styles-activate)
+;; activate package (again, idempotently) once init is complete, to
+;; ensure we catch and supersede rcirc-controls if installed
 (add-hook 'after-init-hook #'rcirc-styles-activate)
 (provide 'rcirc-styles)
 
