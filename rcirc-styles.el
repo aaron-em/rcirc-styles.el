@@ -275,7 +275,7 @@ mind when invoked outside that context."
     (dolist (range ranges)
       (let (face)
         (dolist (attr (plist-get range :attrs))
-          (setq face (push (cons attr t) face)))
+          (setq face (push attr face)))
         (rcirc-add-face (plist-get range :from) (plist-get range :to) face)))
     
     ;; As in `rcirc-styles-markup-colors', q.v.
