@@ -23,18 +23,18 @@
 ;; http://en.wikichip.org/wiki/irc/colors .
 
 ;; As may be expected from the context, it's a bit ad hoc and not the
-;; easiest thing in the world to parse correctly, which may explain
-;; why a prior version of this library attempted to do so with a
-;; recondite yet woefully inadequate regexp.
+;; easiest thing in the world to parse correctly, which may explain why a
+;; prior attempt to satisfy this use case, under the name of
+;; "rcirc-controls.el", attempted to do so with a recondite yet woefully
+;; inadequate regexp.
 
 ;; Rather than attempt to fix the regexp, and even if successful make
 ;; it even more incomprehensible than it started out being, I decided
 ;; it'd be easier and more maintainable to write a string-walking
 ;; parser.
 
-;; So I did that.
-;; In addition to those cases supported in the previous version, this
-;; code correctly handles:
+;; So I did that. In addition to those cases supported in the previous
+;; library, this code correctly handles:
 ;; * Background colors, including implicit backgrounds when a new code
 ;;   provides only a foreground color.
 ;; * Colors at codes between 8 and 15 (and correct colors for codes < 8).
@@ -45,7 +45,7 @@
 
 ;; While I was at it, I noticed some areas in which the both the stock
 ;; attribute markup function in rcirc, and the one provided in
-;; previous versions of rcirc-styles.el, could use improving.
+;; the previous library, could use improving.
 
 ;; So I did that too, and the following cases are now correctly handled:
 ;; * Implicit termination of attribute markup by EOL.
@@ -57,6 +57,13 @@
 ;; let me know! The canonical version of this file lives in the repo
 ;; at https://github.com/aaron-em/rcirc-styles.el, and that's the
 ;; place to open issues -- or, even better, pull requests.
+
+;; Finally, a note: Since this package entirely obsoletes
+;; rcirc-controls, it will attempt rather vigorously to disable its
+;; predecessor, by removing rcirc-controls' hooks from
+;; `rcirc-markup-text-functions' if they are installed. Not to do so,
+;; when both packages are loaded, would result in severely broken
+;; style markup behavior.
 
 ;;; Code:
 
@@ -99,12 +106,12 @@
 ;; execution order, and hang that off the
 ;; `rcirc-markup-text-functions' hook.
 
-(defun rcirc-markup-colors (&rest ignore)
+(defun rcirc-styles-markup-colors (&rest ignore)
   "Mark up received messages with foreground and background colors,
 according to the de facto IRC standard at
 http://en.wikichip.org/wiki/irc/colors.
 
-This function is intended to be hung off `rcirc-markup-controls',
+This function is intended to be hung off `rcirc-styles-markup-styles',
 which is rather magical. It probably will not do what you have in
 mind when invoked outside that context."
   (let* (;; a list of char ranges we'll want to delete, as (offset . length)
@@ -203,7 +210,7 @@ mind when invoked outside that context."
       (goto-char (car pair))
       (delete-char (cdr pair)))))
 
-(defun rcirc-markup-attributes (&rest ignore)
+(defun rcirc-styles-markup-attributes (&rest ignore)
   "Mark up received messages with text attributes (bold, italic,
 underline, and reverse video) according to the de facto IRC
 standard at http://en.wikichip.org/wiki/irc/colors.
@@ -214,7 +221,7 @@ wrong control character for italics; it also fails to recognize
 implicit termination of attributes by EOL, and fails to mark up
 such cases.
 
-This function is intended to be hung off `rcirc-markup-controls',
+This function is intended to be hung off `rcirc-styles-markup-styles',
 which is rather magical. It probably will not do what you have in
 mind when invoked outside that context."
   (let* (deletes
@@ -258,28 +265,28 @@ mind when invoked outside that context."
                             ranges))))))
       (forward-char 1))
 
-    ;; As in `rcirc-markup-colors', q.v.
+    ;; As in `rcirc-styles-markup-colors', q.v.
     (dolist (range ranges)
       (let (face)
         (dolist (attr (plist-get range :attrs))
           (setq face (push (cons attr t) face)))
         (rcirc-add-face (plist-get range :from) (plist-get range :to) face)))
     
-    ;; As in `rcirc-markup-colors', q.v.
+    ;; As in `rcirc-styles-markup-colors', q.v.
     (dolist (pair deletes)
       (goto-char (car pair))
       (delete-char (cdr pair)))))
 
-(defun rcirc-markup-remove-control-o (&rest ignore)
+(defun rcirc-styles-markup-remove-control-o (&rest ignore)
   "Remove all the ^O characters from a string.
 
-This function is intended to be hung off `rcirc-markup-controls',
+This function is intended to be hung off `rcirc-styles-markup-styles',
 which is rather magical. It probably will not do what you have in
 mind when invoked outside that context."
   (while (re-search-forward "\C-o" nil t)
     (backward-delete-char 1)))
 
-(defun rcirc-markup-controls (&rest ignore)
+(defun rcirc-styles-markup-styles (&rest ignore)
   "Apply all the color/attribute markup functions, in a safe execution
 order, to a newly received message.
 
@@ -289,19 +296,31 @@ constrain point within the bounds of the newly received
 message. It probably will not do what you have in mind when
 invoked outside that context."
   (save-excursion
-    (rcirc-markup-colors))
+    (rcirc-styles-markup-colors))
   (save-excursion
-    (rcirc-markup-attributes))
+    (rcirc-styles-markup-attributes))
   (save-excursion
-    (rcirc-markup-remove-control-o)))
+    (rcirc-styles-markup-remove-control-o)))
 
-;; rcirc.el already added this hook (and defined it, badly) - we need
-;; to get rid of it...
-(remove-hook 'rcirc-markup-text-functions 'rcirc-markup-attributes)
+(defun rcirc-styles-disable-rcirc-controls nil
+  (remove-hook 'rcirc-markup-text-functions #'rcirc-markup-controls)
+  (remove-hook 'rcirc-markup-text-functions #'rcirc-markup-colors))
 
-;; ...then add our own hook that does all our markup
-(add-hook 'rcirc-markup-text-functions 'rcirc-markup-controls)
+(defun rcirc-styles-activate nil
+  ;; forcibly supersede broken rcirc-controls.el to avoid broken behavior
+  (when (featurep 'rcirc-controls)
+    (message "rcirc-styles obsoletes rcirc-controls; disabling rcirc-controls.")
+    (rcirc-styles-disable-rcirc-controls))
+  
+  ;; rcirc.el already added this hook (and defined it, badly) - we need
+  ;; to get rid of it...
+  (remove-hook 'rcirc-markup-text-functions 'rcirc-markup-attributes)
+  ;; ...then add our own hook that does all our markup.
+  (add-hook 'rcirc-markup-text-functions 'rcirc-styles-markup-styles))
 
+;; activate package once init is complete, to ensure we catch and
+;; supersede rcirc-controls if installed
+(add-hook 'after-init-hook #'rcirc-styles-activate)
 (provide 'rcirc-styles)
 
 ;;; rcirc-styles.el ends here
