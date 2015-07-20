@@ -69,14 +69,14 @@
 
 (require 'rcirc)
 
-(defvar rcirc-attribute-alist
+(defvar rcirc-styles-attribute-alist
   '(("\C-b" . bold)
     ("\C-]" . italic)
     ("\C-_" . underline)
     ("\C-v" . inverse))
   "mIRC text attribute specification characters.")
 
-(defvar rcirc-color-vector ["white"
+(defvar rcirc-styles-color-vector ["white"
                             "black"
                             "blue"
                             "green"
@@ -194,11 +194,11 @@ mind when invoked outside that context."
             face)
         (when (and fg (< fg 16))
           (setq face (push (cons 'foreground-color
-                                 (aref rcirc-color-vector fg))
+                                 (aref rcirc-styles-color-vector fg))
                            face)))
         (when (and bg (< bg 16))
           (setq face (push (cons 'background-color
-                                 (aref rcirc-color-vector bg))
+                                 (aref rcirc-styles-color-vector bg))
                            face)))
         (rcirc-add-face (plist-get range :from) (plist-get range :to)
                         face)))
@@ -237,7 +237,7 @@ mind when invoked outside that context."
 
       ;; Check each attribute character in turn, to see if we're
       ;; looking at it.
-      (dolist (pair rcirc-attribute-alist)
+      (dolist (pair rcirc-styles-attribute-alist)
         (let ((char (car pair))
               (face (cdr pair)))
           ;; If so, toggle that attribute in `attrs'...
@@ -301,7 +301,7 @@ invoked outside that context."
     (rcirc-styles-markup-attributes))
   (save-excursion
     (rcirc-styles-markup-remove-control-o)))
-
+that's where they're hea
 (defun rcirc-styles-disable-rcirc-controls nil
   (remove-hook 'rcirc-markup-text-functions #'rcirc-markup-controls)
   (remove-hook 'rcirc-markup-text-functions #'rcirc-markup-colors))
