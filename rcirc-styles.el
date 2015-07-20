@@ -1,4 +1,5 @@
 ;;; rcirc-styles.el --- support mIRC-style color and attribute codes
+;; Package-Version: 20150720.001
 ;; Copyright 2015 Aaron Miller <me@aaron-miller.me>
 
 ;; This program is free software; you can redistribute it and/or
@@ -33,7 +34,7 @@
 ;; it'd be easier and more maintainable to write a string-walking
 ;; parser.
 
-;; So I did that. In addition to those cases supported in the previous
+;; So I did that.  In addition to those cases supported in the previous
 ;; library, this code correctly handles:
 ;; * Background colors, including implicit backgrounds when a new code
 ;;   provides only a foreground color.
@@ -53,7 +54,7 @@
 ;; * ^] as the specifier for italics.
 
 ;; As far as I'm aware, this code implements correct and complete
-;; support for mIRC colors and attributes. If I've missed something,
+;; support for mIRC colors and attributes.  If I've missed something,
 ;; let me know! The canonical version of this file lives in the repo
 ;; at https://github.com/aaron-em/rcirc-styles.el, and that's the
 ;; place to open issues -- or, even better, pull requests.
@@ -61,11 +62,14 @@
 ;; Finally, a note: Since this package entirely obsoletes
 ;; rcirc-controls, it will attempt rather vigorously to disable its
 ;; predecessor, by removing rcirc-controls' hooks from
-;; `rcirc-markup-text-functions' if they are installed. Not to do so,
+;; `rcirc-markup-text-functions' if they are installed.  Not to do so,
 ;; when both packages are loaded, would result in severely broken
 ;; style markup behavior.
 
 ;;; Code:
+
+(eval-when-compile
+  (require 'cl))
 
 (require 'rcirc)
 
@@ -211,9 +215,11 @@ mind when invoked outside that context."
       (delete-char (cdr pair)))))
 
 (defun rcirc-styles-markup-attributes (&rest ignore)
-  "Mark up received messages with text attributes (bold, italic,
-underline, and reverse video) according to the de facto IRC
-standard at http://en.wikichip.org/wiki/irc/colors.
+  "Mark up received messages with text attributes.
+
+This function marks up newly received IRC messages with text
+attributes (bold, italic, underline, and reverse video) according to
+the de facto IRC standard at http://en.wikichip.org/wiki/irc/colors.
 
 rcirc as shipped in Emacs 24 actually includes a function by this
 name, but it does not support reverse video, and it uses the
@@ -222,7 +228,7 @@ implicit termination of attributes by EOL, and fails to mark up
 such cases.
 
 This function is intended to be hung off `rcirc-styles-markup-styles',
-which is rather magical. It probably will not do what you have in
+which is rather magical.  It probably will not do what you have in
 mind when invoked outside that context."
   (let* (deletes
          ranges
@@ -281,19 +287,18 @@ mind when invoked outside that context."
   "Remove all the ^O characters from a string.
 
 This function is intended to be hung off `rcirc-styles-markup-styles',
-which is rather magical. It probably will not do what you have in
+which is rather magical.  It probably will not do what you have in
 mind when invoked outside that context."
   (while (re-search-forward "\C-o" nil t)
     (backward-delete-char 1)))
 
 (defun rcirc-styles-markup-styles (&rest ignore)
-  "Apply all the color/attribute markup functions, in a safe execution
-order, to a newly received message.
+  "Apply rcirc-styles color/attribute markup.
 
 This function is intended to be hung off
 `rcirc-markup-text-functions', which invokes some magic to
 constrain point within the bounds of the newly received
-message. It probably will not do what you have in mind when
+message.  It probably will not do what you have in mind when
 invoked outside that context."
   (save-excursion
     (rcirc-styles-markup-colors))
@@ -301,12 +306,14 @@ invoked outside that context."
     (rcirc-styles-markup-attributes))
   (save-excursion
     (rcirc-styles-markup-remove-control-o)))
-that's where they're hea
+
 (defun rcirc-styles-disable-rcirc-controls nil
+  "Disable rcirc-controls.el, if it is installed."
   (remove-hook 'rcirc-markup-text-functions #'rcirc-markup-controls)
   (remove-hook 'rcirc-markup-text-functions #'rcirc-markup-colors))
 
 (defun rcirc-styles-activate nil
+  "Activate rcirc-styles.el; if necessary, disable rcirc-controls."
   ;; forcibly supersede broken rcirc-controls.el to avoid broken behavior
   (when (featurep 'rcirc-controls)
     (message "rcirc-styles obsoletes rcirc-controls; disabling rcirc-controls.")
