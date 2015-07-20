@@ -110,6 +110,11 @@
 ;; execution order, and hang that off the
 ;; `rcirc-markup-text-functions' hook.
 
+(if (not (facep 'inverse))
+    (progn
+      (make-face 'inverse)
+      (set-face-inverse-video-p 'inverse t)))
+
 (defun rcirc-styles-markup-colors (&rest ignore)
   "Mark up received messages with foreground and background colors,
 according to the de facto IRC standard at
@@ -275,7 +280,7 @@ mind when invoked outside that context."
     (dolist (range ranges)
       (let (face)
         (dolist (attr (plist-get range :attrs))
-          (setq face (push (cons attr t) face)))
+          (setq face (push attr face)))
         (rcirc-add-face (plist-get range :from) (plist-get range :to) face)))
     
     ;; As in `rcirc-styles-markup-colors', q.v.
