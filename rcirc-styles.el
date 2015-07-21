@@ -1,6 +1,8 @@
 ;;; rcirc-styles.el --- support mIRC-style color and attribute codes
+
 ;; Package-Version: 20150720.001
 ;; Copyright 2015 Aaron Miller <me@aaron-miller.me>
+;; Package-Requires: ((cl-lib "0.5"))
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -68,9 +70,7 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (require 'cl))
-
+(require 'cl-lib)
 (require 'rcirc)
 
 (defvar rcirc-styles-attribute-alist
@@ -134,7 +134,7 @@ mind when invoked outside that context."
     (goto-char (point-min))
 
     ;; walk along the message
-    (while (not (equalp (point) (point-max)))
+    (while (not (cl-equalp (point) (point-max)))
       
       ;; ^O means "turn off all formatting"
       (if (looking-at "\C-o")
@@ -239,7 +239,7 @@ mind when invoked outside that context."
          ranges
          attrs)
     (goto-char (point-min))
-    (while (not (equalp (point) (point-max)))
+    (while (not (cl-equalp (point) (point-max)))
       
       ;; ^O means "turn off all formatting"
       (if (looking-at "\C-o")
@@ -257,7 +257,7 @@ mind when invoked outside that context."
             (forward-char 1)
             (setq attrs
                   (if (member face attrs)
-                      (remove-if #'(lambda (e) (eq face e)) attrs)
+                      (cl-remove-if #'(lambda (e) (eq face e)) attrs)
                     (push face attrs)))
             ;; ...and, when there are attributes to apply, push a
             ;; range that does so.
