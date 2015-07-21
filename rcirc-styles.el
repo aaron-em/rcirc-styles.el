@@ -132,7 +132,7 @@ mind when invoked outside that context."
     (goto-char (point-min))
 
     ;; walk along the message
-    (while (not (equalp (point) (point-max)))
+    (while (not (cl-equalp (point) (point-max)))
       
       ;; ^O means "turn off all formatting"
       (if (looking-at "\C-o")
@@ -237,7 +237,7 @@ mind when invoked outside that context."
          ranges
          attrs)
     (goto-char (point-min))
-    (while (not (equalp (point) (point-max)))
+    (while (not (cl-equalp (point) (point-max)))
       
       ;; ^O means "turn off all formatting"
       (if (looking-at "\C-o")
@@ -255,7 +255,7 @@ mind when invoked outside that context."
             (forward-char 1)
             (setq attrs
                   (if (member face attrs)
-                      (remove-if #'(lambda (e) (eq face e)) attrs)
+                      (cl-remove-if #'(lambda (e) (eq face e)) attrs)
                     (push face attrs)))
             ;; ...and, when there are attributes to apply, push a
             ;; range that does so.
