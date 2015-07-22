@@ -1,5 +1,8 @@
 #+TITLE: rcirc-styles.el
 
+[[http://melpa.org/#/rcirc-styles][http://melpa.org/packages/rcirc-styles-badge.svg]]
+[[http://stable.melpa.org/#/rcirc-styles][http://stable.melpa.org/packages/rcirc-styles-badge.svg]]
+
 Giving rcirc correct and complete support for mIRC-style color and
 attribute codes
 
