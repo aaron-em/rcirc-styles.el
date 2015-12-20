@@ -1,6 +1,6 @@
 ;;; rcirc-styles.el --- support mIRC-style color and attribute codes
 
-;; Package-Version: 20150720.001
+;; Package-Version: 20151220.001
 ;; Copyright 2015 Aaron Miller <me@aaron-miller.me>
 ;; Package-Requires: ((cl-lib "0.5"))
 
