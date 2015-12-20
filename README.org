@@ -8,7 +8,7 @@ attribute codes
 
 Copyright © 2015 Aaron Miller. All rights reversed. Share and Enjoy!
 
-Last revision: Monday, July 20, 2015, ca. 10:00.
+Last revision: Sunday, December 20, 2015, ca. 14:00.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as
