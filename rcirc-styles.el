@@ -237,9 +237,11 @@ which is rather magical.  It probably will not do what you have in
 mind when invoked outside that context."
   (let* (deletes
          ranges
-         attrs)
+         attrs
+         advanced)
     (goto-char (point-min))
     (while (not (cl-equalp (point) (point-max)))
+      (setq advanced nil)
       
       ;; ^O means "turn off all formatting"
       (if (looking-at "\C-o")
@@ -255,6 +257,7 @@ mind when invoked outside that context."
           (when (looking-at char)
             (setq deletes (push `(,(point) . 1) deletes))
             (forward-char 1)
+            (setq advanced t)
             (setq attrs
                   (if (member face attrs)
                       (cl-remove-if #'(lambda (e) (eq face e)) attrs)
@@ -274,7 +277,8 @@ mind when invoked outside that context."
                                          (point-max)))
                               :attrs ,attrs)
                             ranges))))))
-      (forward-char 1))
+      (and (not advanced)
+           (forward-char 1)))
 
     ;; As in `rcirc-styles-markup-colors', q.v.
     (dolist (range ranges)
