@@ -2,7 +2,7 @@
 
 [[http://melpa.org/#/rcirc-styles][http://melpa.org/packages/rcirc-styles-badge.svg]]
 [[http://stable.melpa.org/#/rcirc-styles][http://stable.melpa.org/packages/rcirc-styles-badge.svg]]
-[[https://travis-ci.org/aaron-em/rcirc-styles.el.svg][https://travis-ci.org/aaron-em/rcirc-styles.el.svg]]
+[[https://travis-ci.org/aaron-em/rcirc-styles.el][https://travis-ci.org/aaron-em/rcirc-styles.el.svg]]
 
 Giving rcirc correct and complete support for mIRC-style color and
 attribute codes
