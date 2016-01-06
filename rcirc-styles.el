@@ -73,11 +73,22 @@
 (require 'cl-lib)
 (require 'rcirc)
 
+(defalias 'rcirc-styles-set-face-inverse-video
+  (symbol-function
+   (if (version< emacs-version "24.4.0")
+       'set-face-inverse-video-p
+       'set-face-inverse-video))
+  "Which function we use to set inverse video on a face;
+  `set-face-inverse-video-p' was deprecated in 24.4 in favor of
+  `set-face-inverse-video', so we need to check the version and
+  change which function we call accordingly.")
+
 (defvar rcirc-styles-attribute-alist
   '(("\C-b" . bold)
     ("\C-]" . italic)
     ("\C-_" . underline)
-    ("\C-v" . inverse))
+    ("\C-v" . inverse)
+    ("\C-o" . disable))
   "mIRC text attribute specification characters.")
 
 (defvar rcirc-styles-color-vector ["white"
@@ -113,7 +124,7 @@
 (if (not (facep 'inverse))
     (progn
       (make-face 'inverse)
-      (set-face-inverse-video 'inverse t)))
+      (funcall 'rcirc-styles-set-face-inverse-video 'inverse t)))
 
 (defun rcirc-styles-markup-colors (&rest ignore)
   "Mark up received messages with foreground and background colors,
@@ -253,8 +264,9 @@ mind when invoked outside that context."
       (dolist (pair rcirc-styles-attribute-alist)
         (let ((char (car pair))
               (face (cdr pair)))
-          ;; If so, toggle that attribute in `attrs'...
-          (when (looking-at char)
+          ;; If so, and if it's not C-o, toggle that attribute in `attrs'...
+          (when (and (not (eq face 'disable))
+                     (looking-at char))
             (setq deletes (push `(,(point) . 1) deletes))
             (forward-char 1)
             (setq advanced t)

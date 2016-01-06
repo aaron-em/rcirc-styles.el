@@ -11,7 +11,7 @@
   (if (version< emacs-version "24.4.0")
       'face
       'font-lock-face)
-  "which symbol identifies the face property of a region of
+  "Which symbol identifies the face property of a region of
   propertized text. This changed in Emacs 24.4, so we need to
   check the version and change our property of interest
   accordingly.")
