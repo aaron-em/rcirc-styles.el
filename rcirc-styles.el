@@ -113,7 +113,7 @@
 (if (not (facep 'inverse))
     (progn
       (make-face 'inverse)
-      (set-face-inverse-video-p 'inverse t)))
+      (set-face-inverse-video 'inverse t)))
 
 (defun rcirc-styles-markup-colors (&rest ignore)
   "Mark up received messages with foreground and background colors,
@@ -318,8 +318,10 @@ invoked outside that context."
 
 (defun rcirc-styles-disable-rcirc-controls nil
   "Disable rcirc-controls.el, if it is installed."
-  (remove-hook 'rcirc-markup-text-functions #'rcirc-markup-controls)
-  (remove-hook 'rcirc-markup-text-functions #'rcirc-markup-colors))
+  (and (functionp 'rcirc-markup-controls)
+       (remove-hook 'rcirc-markup-text-functions #'rcirc-markup-controls))
+  (and (functionp 'rcirc-markup-colors)
+       (remove-hook 'rcirc-markup-text-functions #'rcirc-markup-colors)))
 
 (defun rcirc-styles-activate nil
   "Activate rcirc-styles.el; if necessary, disable rcirc-controls."
