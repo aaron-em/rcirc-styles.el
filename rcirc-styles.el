@@ -361,9 +361,10 @@ read-only preview of styled input.
   This function has no effect in non-rcirc buffers."
   (interactive)
   (when (eq major-mode 'rcirc-mode)
-    (if rcirc-styles-previewing
-        (rcirc-styles--hide-preview)
-        (rcirc-styles--show-preview))))
+    (with-silent-modifications
+      (if rcirc-styles-previewing
+          (rcirc-styles--hide-preview)
+          (rcirc-styles--show-preview)))))
 
 (defun rcirc-styles--show-preview nil
   "Put the current rcirc buffer in preview mode.
