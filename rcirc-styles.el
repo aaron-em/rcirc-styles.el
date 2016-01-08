@@ -73,6 +73,10 @@
 (require 'cl-lib)
 (require 'rcirc)
 
+;;
+;; Functions and variables related to attribute and color markup.
+;;
+
 (defalias 'rcirc-styles-set-face-inverse-video
   (symbol-function
    (if (version< emacs-version "24.4.0")
@@ -325,6 +329,83 @@ invoked outside that context."
     (rcirc-styles-markup-attributes))
   (save-excursion
     (rcirc-styles-markup-remove-control-o)))
+
+;;
+;; Functions and variables related to previewing styled text.
+;;
+
+(defvar rcirc-styles-insert-map
+  (make-sparse-keymap)
+  "Keymap binding `rcirc-styles-insert' functions.")
+
+(define-key rcirc-mode-map
+    (kbd "C-c C-s") rcirc-styles-insert-map)
+
+(define-key rcirc-styles-insert-map
+    (kbd "C-p") #'rcirc-styles-insert-toggle-preview)
+
+(defvar rcirc-styles-insert-previewed-input nil
+  "Literal input currently under preview with
+`rcirc-styles-insert-preview'.")
+(defvar rcirc-styles-insert-previewing nil
+  "Whether we are currently previewing input in this buffer with
+`rcirc-styles-insert-preview'.")
+(make-variable-buffer-local 'rcirc-styles-insert-previewed-input)
+(make-variable-buffer-local 'rcirc-styles-insert-previewing)
+
+(defun rcirc-styles-insert-toggle-preview nil
+  "Switch the current buffer's state between literal input and a
+read-only preview of styled input.
+
+  This function has no effect in non-rcirc buffers."
+  (interactive)
+  (when (eq major-mode 'rcirc-mode)
+    (if rcirc-styles-insert-previewing
+        (rcirc-styles-insert--hide-preview)
+        (rcirc-styles-insert--show-preview))))
+
+(defun rcirc-styles-insert--show-preview nil
+  "Put the current rcirc buffer in preview mode.
+
+Calling this function by hand may well hose your buffer
+state. Don't do that."
+  (when (and (not rcirc-styles-insert-previewing)
+             (not rcirc-styles-insert-previewed-input)
+             (< rcirc-prompt-end-marker (point-max)))
+    (let (input preview)
+      (goto-char rcirc-prompt-end-marker)
+      (setq input (buffer-substring (point) (point-max)))
+      (with-temp-buffer
+        (insert input)
+        (rcirc-styles-markup-styles)
+        (setq preview
+              (propertize (buffer-substring (point-min) (point-max))
+                          'read-only
+                          "In preview mode - C-c C-s C-p to continue editing")))
+      (goto-char rcirc-prompt-end-marker)
+      (delete-region (point) (point-max))
+      (insert preview)
+      (setq rcirc-styles-insert-previewed-input input)
+      (setq rcirc-styles-insert-previewing t)
+      (message "Previewing styled input - C-c C-s C-p to continue editing"))))
+
+(defun rcirc-styles-insert--hide-preview nil
+  "Take the current rcirc buffer out of preview mode.
+
+Calling this function by hand may well hose your buffer
+state. Don't do that."
+  (when (and rcirc-styles-insert-previewing
+             rcirc-styles-insert-previewed-input)
+    (goto-char rcirc-prompt-end-marker)
+    (setq inhibit-read-only t)
+    (delete-region (point) (point-max))
+    (setq inhibit-read-only nil)
+    (insert rcirc-styles-insert-previewed-input)
+    (setq rcirc-styles-insert-previewed-input nil)
+    (setq rcirc-styles-insert-previewing nil)
+    (message "Editing input - C-c C-s C-p to preview styles")))
+
+
 
 (defun rcirc-styles-disable-rcirc-controls nil
   "Disable rcirc-controls.el, if it is installed."
