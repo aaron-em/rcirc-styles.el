@@ -87,8 +87,7 @@
   '(("\C-b" . bold)
     ("\C-]" . italic)
     ("\C-_" . underline)
-    ("\C-v" . inverse)
-    ("\C-o" . disable))
+    ("\C-v" . inverse))
   "mIRC text attribute specification characters.")
 
 (defvar rcirc-styles-color-vector ["white"
@@ -265,8 +264,7 @@ mind when invoked outside that context."
         (let ((char (car pair))
               (face (cdr pair)))
           ;; If so, and if it's not C-o, toggle that attribute in `attrs'...
-          (when (and (not (eq face 'disable))
-                     (looking-at char))
+          (when (looking-at char)
             (setq deletes (push `(,(point) . 1) deletes))
             (forward-char 1)
             (setq advanced t)
