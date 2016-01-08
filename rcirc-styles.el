@@ -267,7 +267,7 @@ mind when invoked outside that context."
       (dolist (pair rcirc-styles-attribute-alist)
         (let ((char (car pair))
               (face (cdr pair)))
-          ;; If so, and if it's not C-o, toggle that attribute in `attrs'...
+          ;; If so, toggle that attribute in `attrs'...
           (when (looking-at char)
             (setq deletes (push `(,(point) . 1) deletes))
             (forward-char 1)
@@ -323,6 +323,7 @@ This function is intended to be hung off
 constrain point within the bounds of the newly received
 message.  It probably will not do what you have in mind when
 invoked outside that context."
+  (goto-char (point-min))
   (save-excursion
     (rcirc-styles-markup-colors))
   (save-excursion
@@ -334,43 +335,43 @@ invoked outside that context."
 ;; Functions and variables related to previewing styled text.
 ;;
 
-(defvar rcirc-styles-insert-map
+(defvar rcirc-styles-map
   (make-sparse-keymap)
   "Keymap binding `rcirc-styles-insert' functions.")
 
 (define-key rcirc-mode-map
-    (kbd "C-c C-s") rcirc-styles-insert-map)
+    (kbd "C-c C-s") rcirc-styles-map)
 
-(define-key rcirc-styles-insert-map
-    (kbd "C-p") #'rcirc-styles-insert-toggle-preview)
+(define-key rcirc-styles-map
+    (kbd "C-p") #'rcirc-styles-toggle-preview)
 
-(defvar rcirc-styles-insert-previewed-input nil
+(defvar rcirc-styles-previewed-input nil
   "Literal input currently under preview with
-`rcirc-styles-insert-preview'.")
-(defvar rcirc-styles-insert-previewing nil
+`rcirc-styles-preview'.")
+(defvar rcirc-styles-previewing nil
   "Whether we are currently previewing input in this buffer with
-`rcirc-styles-insert-preview'.")
-(make-variable-buffer-local 'rcirc-styles-insert-previewed-input)
-(make-variable-buffer-local 'rcirc-styles-insert-previewing)
+`rcirc-styles-preview'.")
+(make-variable-buffer-local 'rcirc-styles-previewed-input)
+(make-variable-buffer-local 'rcirc-styles-previewing)
 
-(defun rcirc-styles-insert-toggle-preview nil
+(defun rcirc-styles-toggle-preview nil
   "Switch the current buffer's state between literal input and a
 read-only preview of styled input.
 
   This function has no effect in non-rcirc buffers."
   (interactive)
   (when (eq major-mode 'rcirc-mode)
-    (if rcirc-styles-insert-previewing
-        (rcirc-styles-insert--hide-preview)
-        (rcirc-styles-insert--show-preview))))
+    (if rcirc-styles-previewing
+        (rcirc-styles--hide-preview)
+        (rcirc-styles--show-preview))))
 
-(defun rcirc-styles-insert--show-preview nil
+(defun rcirc-styles--show-preview nil
   "Put the current rcirc buffer in preview mode.
 
 Calling this function by hand may well hose your buffer
 state. Don't do that."
-  (when (and (not rcirc-styles-insert-previewing)
-             (not rcirc-styles-insert-previewed-input)
+  (when (and (not rcirc-styles-previewing)
+             (not rcirc-styles-previewed-input)
              (< rcirc-prompt-end-marker (point-max)))
     (let (input preview)
       (goto-char rcirc-prompt-end-marker)
@@ -385,24 +386,24 @@ state. Don't do that."
       (goto-char rcirc-prompt-end-marker)
       (delete-region (point) (point-max))
       (insert preview)
-      (setq rcirc-styles-insert-previewed-input input)
-      (setq rcirc-styles-insert-previewing t)
+      (setq rcirc-styles-previewed-input input)
+      (setq rcirc-styles-previewing t)
       (message "Previewing styled input - C-c C-s C-p to continue editing"))))
 
-(defun rcirc-styles-insert--hide-preview nil
+(defun rcirc-styles--hide-preview nil
   "Take the current rcirc buffer out of preview mode.
 
 Calling this function by hand may well hose your buffer
 state. Don't do that."
-  (when (and rcirc-styles-insert-previewing
-             rcirc-styles-insert-previewed-input)
+  (when (and rcirc-styles-previewing
+             rcirc-styles-previewed-input)
     (goto-char rcirc-prompt-end-marker)
     (setq inhibit-read-only t)
     (delete-region (point) (point-max))
     (setq inhibit-read-only nil)
-    (insert rcirc-styles-insert-previewed-input)
-    (setq rcirc-styles-insert-previewed-input nil)
-    (setq rcirc-styles-insert-previewing nil)
+    (insert rcirc-styles-previewed-input)
+    (setq rcirc-styles-previewed-input nil)
+    (setq rcirc-styles-previewing nil)
     (message "Editing input - C-c C-s C-p to preview styles")))
 
 
