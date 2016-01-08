@@ -73,6 +73,10 @@
 (require 'cl-lib)
 (require 'rcirc)
 
+;;
+;; Functions and variables related to attribute and color markup.
+;;
+
 (defalias 'rcirc-styles-set-face-inverse-video
   (symbol-function
    (if (version< emacs-version "24.4.0")
@@ -325,6 +329,69 @@ invoked outside that context."
     (rcirc-styles-markup-attributes))
   (save-excursion
     (rcirc-styles-markup-remove-control-o)))
+
+;;
+;; Functions and variables related to convenient attribute and color insertion.
+;; 
+
+(defvar rcirc-styles-insert-map
+  (make-sparse-keymap)
+  "Keymap binding `rcirc-styles-insert' functions.")
+
+(define-key rcirc-mode-map
+    (kbd "C-c C-s") rcirc-styles-insert-map)
+
+(define-key rcirc-styles-insert-map
+    (kbd "C-a") #'rcirc-styles-insert-attribute)
+(define-key rcirc-styles-insert-map
+    (kbd "C-c") #'rcirc-styles-insert-color)
+
+(defun rcirc-styles--read-color (prompt &optional allow-empty)
+  "Prompt for a color name, providing completion over known
+values."
+  (let ((colors (mapcar #'identity rcirc-styles-color-vector))
+        val)
+    (while (not (or (string= val "")
+                    (not (null (member val colors)))))
+      (setq val
+            (completing-read (concat prompt
+                                     (and allow-empty " (RET for none)")
+                                     ": ")
+                             colors nil (not allow-empty) nil nil "")))
+    (if (stringp val) val nil)))
+
+(defun rcirc-styles-insert-color (fg bg)
+  "Insert at point a color code representing foreground FG and
+background BG.
+
+When called interactively, prompt for both values, providing
+completion over known values."
+  (interactive (list
+                (rcirc-styles--read-color "Foreground")
+                (rcirc-styles--read-color "Background" t)))
+  (insert "\C-c"
+          (number-to-string
+           (cl-position fg rcirc-styles-color-vector :test #'string=)))
+  (and (not (string= bg ""))
+       (insert
+        ","
+        (number-to-string
+         (cl-position bg rcirc-styles-color-vector :test #'string=)))))
+
+(defun rcirc-styles-insert-attribute (attr)
+  "Insert at point an attribute code representing the desired
+attribute ATTR.
+
+When called interactively, prompt for an attribute name,
+  providing completion over known values."
+  (interactive (list
+                (completing-read "Attribute: "
+                                 (mapcar #'cdr rcirc-styles-attribute-alist) nil t)))
+  (insert (car (rassoc (intern attr) rcirc-styles-attribute-alist))))
+
+;;
+;; Functions related to clean activation of rcirc-styles.
+;; 
 
 (defun rcirc-styles-disable-rcirc-controls nil
   "Disable rcirc-controls.el, if it is installed."
