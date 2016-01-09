@@ -340,9 +340,6 @@ invoked outside that context."
   (make-sparse-keymap)
   "Keymap binding `rcirc-styles-insert' functions.")
 
-(define-key rcirc-mode-map
-    (kbd "C-c C-s") rcirc-styles-insert-map)
-
 (define-key rcirc-styles-insert-map
     (kbd "C-a") #'rcirc-styles-insert-attribute)
 (define-key rcirc-styles-insert-map
