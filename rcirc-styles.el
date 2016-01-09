@@ -339,9 +339,6 @@ invoked outside that context."
   (make-sparse-keymap)
   "Keymap binding `rcirc-styles-insert' functions.")
 
-(define-key rcirc-mode-map
-    (kbd "C-c C-s") rcirc-styles-map)
-
 (define-key rcirc-styles-map
     (kbd "C-p") #'rcirc-styles-toggle-preview)
 
@@ -382,8 +379,7 @@ state. Don't do that."
         (rcirc-styles-markup-styles)
         (setq preview
               (propertize (buffer-substring (point-min) (point-max))
-                          'read-only
-                          "In preview mode - C-c C-s C-p to continue editing")))
+                          'read-only "In preview mode - C-c C-s C-p to continue editing")))
       (goto-char rcirc-prompt-end-marker)
       (delete-region (point) (point-max))
       (insert preview)
@@ -401,13 +397,11 @@ state. Don't do that."
     (goto-char rcirc-prompt-end-marker)
     (setq inhibit-read-only t)
     (delete-region (point) (point-max))
-    (setq inhibit-read-only nil)
     (insert rcirc-styles-previewed-input)
+    (setq inhibit-read-only nil)
     (setq rcirc-styles-previewed-input nil)
     (setq rcirc-styles-previewing nil)
     (message "Editing input - C-c C-s C-p to preview styles")))
-
-
 
 (defun rcirc-styles-disable-rcirc-controls nil
   "Disable rcirc-controls.el, if it is installed."
