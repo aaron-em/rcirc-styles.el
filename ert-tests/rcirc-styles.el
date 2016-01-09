@@ -74,9 +74,9 @@
   "Should terminate color specification property at ^O."
   (with-style-sandbox "3colorless"
     (rcirc-styles-markup-colors)
-    (let ((result (get-text-property (+ (point-min) 6) 
-                                     rcirc-styles-tests/face-name))
-          (expected nil))
+    (let ((expected nil)
+          (result (get-text-property (+ (point-min) 6) 
+                                     rcirc-styles-tests/face-name)))
       (should (cl-equalp result expected)))))
 
 ;; Basic attribute propertization cases.
@@ -162,18 +162,18 @@
   "Should propertize adjacent differing attribute specifications correctly."
   (with-style-sandbox "emboldened"
     (rcirc-styles-markup-styles)
-    (let ((expected (get-text-property (+ (point-min) 4) 
-                                       rcirc-styles-tests/face-name))
-          (result (plist-get rcirc-styles-tests/fixtures :bold-inverse-face)))
+    (let ((expected (plist-get rcirc-styles-tests/fixtures :bold-inverse-face))
+          (result (get-text-property (+ (point-min) 4) 
+                                     rcirc-styles-tests/face-name)))
       (should (cl-equalp result expected)))))
 
 (ert-deftest rcirc-styles-tests/propertize-adjacent-attr-color nil
   "Should propertize adjacent attribute and color specifications correctly."
   (with-style-sandbox "3emboldened"
     (rcirc-styles-markup-styles)
-    (let ((expected (get-text-property (+ (point-min) 1) 
-                                       rcirc-styles-tests/face-name))
-          (result (plist-get rcirc-styles-tests/fixtures :green-face)))
+    (let ((expected (plist-get rcirc-styles-tests/fixtures :green-face))
+          (result (get-text-property (+ (point-min) 1) 
+                                     rcirc-styles-tests/face-name)))
       (should (cl-equalp result expected)))))
 
 ;; rcirc-styles-map definitions.
