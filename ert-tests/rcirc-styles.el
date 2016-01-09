@@ -175,3 +175,154 @@
                                        rcirc-styles-tests/face-name))
           (result (plist-get rcirc-styles-tests/fixtures :green-face)))
       (should (cl-equalp result expected)))))
+
+;; rcirc-styles-map definitions.
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-map-defs nil
+  "Should correctly define `rcirc-styles-map' bindings for styled text preview."
+  (let ((expected #'rcirc-styles-toggle-preview)
+        (result (lookup-key rcirc-styles-map (kbd "C-p"))))
+    (should (cl-equalp result expected))))
+
+;; rcirc-styles-toggle-preview.
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-preview-only-in-rcirc nil
+  "Should do nothing when invoked and current-buffer is not an rcirc-mode buffer."
+  (let ((not-called t))
+    (cl-flet ((rcirc-styles--show-preview nil (setq not-called nil))
+              (rcirc-styles--hide-preview nil (setq not-called nil)))
+      (rcirc-styles-toggle-preview)
+      (should (eq not-called t)))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-toggle-preview-on nil
+  "Should invoke `rcirc-styles--show-preview' in a buffer not already prevewing."
+  (with-temp-buffer
+    (setq major-mode 'rcirc-mode)
+    (let (right-call wrong-call)
+      (cl-letf (((symbol-function #'rcirc-styles--show-preview)
+                 #'(lambda nil (setq right-call t)))
+                ((symbol-function #'rcirc-styles--hide-preview)
+                 #'(lambda nil (setq wrong-call t))))
+        (rcirc-styles-toggle-preview)
+        (should (eq right-call t))
+        (should (eq wrong-call nil))))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-toggle-preview-off nil
+  "Should invoke `rcirc-styles--hide-preview' in a buffer already prevewing."
+  (with-temp-buffer
+    (setq major-mode 'rcirc-mode)
+    (setq rcirc-styles-previewing t)
+    (let (right-call wrong-call)
+      ;; (cl-flet ((rcirc-styles--show-preview nil (setq wrong-call t))
+      ;;           (rcirc-styles--hide-preview nil (setq right-call t)))
+      (cl-letf (((symbol-function #'rcirc-styles--show-preview)
+                 #'(lambda nil (setq wrong-call t)))
+                ((symbol-function #'rcirc-styles--hide-preview)
+                 #'(lambda nil (setq right-call t))))
+        (rcirc-styles-toggle-preview)
+        (should (eq right-call t))
+        (should (eq wrong-call nil))))))
+
+;; ;; rcirc-styles--show-preview.
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--show-preview-works nil
+  "Should correctly replace literal text with style codes, with styled preview text."
+  (with-style-sandbox "3foo"
+    (setq rcirc-prompt-end-marker (point-min))
+    ;; (cl-flet ((message (&rest ignore) nil))
+    (cl-letf (((symbol-function #'message)
+               #'(lambda (&rest ignore) nil)))
+      (rcirc-styles--show-preview))
+    (let ((expected (plist-get rcirc-styles-tests/fixtures :green-face))
+          (result (get-text-property (point-min)
+                                     rcirc-styles-tests/face-name)))
+      (should (cl-equalp result expected)))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--show-preview-read-only nil
+  "Should correctly propertize styled preview text read-only."
+  (with-style-sandbox "3foo"
+    (setq rcirc-prompt-end-marker (point-min))
+    (cl-letf (((symbol-function #'message)
+               #'(lambda (&rest ignore) nil)))
+      (rcirc-styles--show-preview))
+    (let ((expected t)
+          (result (stringp (get-text-property (point-min) 'read-only))))
+      (should (cl-equalp result expected)))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--show-preview-message nil
+  "Should emit a message about entering preview mode."
+  (with-style-sandbox "3foo"
+    (let ((not-called t))
+      (setq rcirc-prompt-end-marker (point-min))
+    (cl-letf (((symbol-function #'message)
+               #'(lambda (&rest ignore) (setq not-called nil))))
+        (rcirc-styles--show-preview))
+      (should (eq not-called nil)))))
+
+;; ;; rcirc-styles--hide-preview.
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--hide-preview-works nil
+  "Should correctly replace styled preview text with previously cached input."
+  (with-style-sandbox "lolwut"
+    (setq rcirc-styles-previewing t)
+    (setq rcirc-styles-previewed-input "foobar")
+    (setq rcirc-prompt-end-marker (point-min))
+    (cl-letf (((symbol-function #'message)
+               #'(lambda (&rest ignore) nil)))
+      (rcirc-styles--hide-preview))
+    (let ((expected "foobar")
+          (result (buffer-substring (point-min) (point-max))))
+      (should (string= result expected)))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--hide-preview-message nil
+  "Should emit a message about leaving preview mode."
+  (with-style-sandbox "lolwut"
+    (setq rcirc-styles-previewing t)
+    (setq rcirc-styles-previewed-input "foobar")
+    (setq rcirc-prompt-end-marker (point-min))
+    (let ((not-called t))
+    (cl-letf (((symbol-function #'message)
+               #'(lambda (&rest ignore) (setq not-called nil))))
+      (rcirc-styles--hide-preview)
+      (should (eq not-called nil))))))
+
+;; ;; Administrative details and suchlike.
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-disable-rcirc-controls nil
+  "Should remove rcirc-controls' hooks, if they're defined."
+  (let (removed-hooks)
+    (cl-letf (((symbol-function #'functionp)
+               #'(lambda (fun) t))
+              ((symbol-function #'remove-hook)
+               #'(lambda (var fun) (setq removed-hooks (push fun removed-hooks)))))
+      (rcirc-styles-disable-rcirc-controls))
+      (should (not (eq nil (member 'rcirc-markup-controls removed-hooks))))
+      (should (not (eq nil (member 'rcirc-markup-colors removed-hooks))))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-activate-warning nil
+  "Should warn about disabling rcirc-controls, if it does so."
+  (provide 'rcirc-controls)
+  (let ((not-called t))
+    (cl-letf (((symbol-function #'message)
+               #'(lambda (&rest ignore) (setq not-called nil)))
+              ((symbol-function #'add-hook)
+               #'(lambda (&rest ignore) nil))
+              ((symbol-function #'remove-hook)
+               #'(lambda (&rest ignore) nil)))
+      (rcirc-styles-activate))
+    (should (eq not-called nil))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-activate-hooks nil
+  "Should remove bogus rcirc-markup-attributes hook and add our own."
+  (provide 'rcirc-controls)
+  (let (removed-hooks added-hooks)
+    (cl-letf (((symbol-function #'message)
+               #'(lambda (&rest ignore) nil))
+              ((symbol-function #'add-hook)
+               #'(lambda (var fun) (setq added-hooks (push fun added-hooks))))
+              ((symbol-function #'remove-hook)
+               #'(lambda (var fun) (setq removed-hooks (push fun removed-hooks)))))
+      (rcirc-styles-activate))
+    (should (equal added-hooks '(rcirc-styles-markup-styles)))
+    (should (equal removed-hooks '(rcirc-markup-attributes)))))
+
