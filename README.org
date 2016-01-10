@@ -9,7 +9,7 @@ attribute codes
 
 Copyright © 2016 Aaron Miller. All rights reversed. Share and Enjoy!
 
-Last revision: Sunday, January 10, 2016, ca. 13:30.
+Last revision: Sunday, January 10, 2016, ca. 18:00.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as
@@ -100,6 +100,10 @@ In a future version, I plan to automate the binding to =rcirc-mode-map= and make
 Also in a future version, I plan to add shortcut keybindings for commonly used attributes, so that e.g. =C-c C-s b= will insert the bold attribute code directly, rather than requiring all of =C-c C-s C-a bold RET=. (As above, if you want to see it faster, [[https://github.com/aaron-em/rcirc-styles.el/issues/8][let me know]]!)
 
 ** Release History
+
+*** 1.3.1
+
+January 10, 2016 - Fix a bug wherein `rcirc-styles-insert-attribute` fails under Emacs 24.3 due to `try-completion` accepting different argument types from its Emacs 24.4 equivalent.
 
 *** 1.3
 
