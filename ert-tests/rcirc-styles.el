@@ -176,14 +176,6 @@
                                      rcirc-styles-tests/face-name)))
       (should (cl-equalp result expected)))))
 
-;; rcirc-styles-map definitions.
-
-(ert-deftest rcirc-styles-tests/rcirc-styles-map-defs nil
-  "Should correctly define `rcirc-styles-map' bindings for styled text preview."
-  (let ((expected #'rcirc-styles-toggle-preview)
-        (result (lookup-key rcirc-styles-map (kbd "C-p"))))
-    (should (cl-equalp result expected))))
-
 ;; rcirc-styles-toggle-preview.
 
 (ert-deftest rcirc-styles-tests/rcirc-styles-preview-only-in-rcirc nil
@@ -213,8 +205,6 @@
     (setq major-mode 'rcirc-mode)
     (setq rcirc-styles-previewing t)
     (let (right-call wrong-call)
-      ;; (cl-flet ((rcirc-styles--show-preview nil (setq wrong-call t))
-      ;;           (rcirc-styles--hide-preview nil (setq right-call t)))
       (cl-letf (((symbol-function #'rcirc-styles--show-preview)
                  #'(lambda nil (setq wrong-call t)))
                 ((symbol-function #'rcirc-styles--hide-preview)
@@ -223,7 +213,7 @@
         (should (eq right-call t))
         (should (eq wrong-call nil))))))
 
-;; ;; rcirc-styles--show-preview.
+;; rcirc-styles--show-preview.
 
 (ert-deftest rcirc-styles-tests/rcirc-styles--show-preview-works nil
   "Should correctly replace literal text with style codes, with styled preview text."
@@ -259,7 +249,7 @@
         (rcirc-styles--show-preview))
       (should (eq not-called nil)))))
 
-;; ;; rcirc-styles--hide-preview.
+;; rcirc-styles--hide-preview.
 
 (ert-deftest rcirc-styles-tests/rcirc-styles--hide-preview-works nil
   "Should correctly replace styled preview text with previously cached input."
@@ -286,7 +276,25 @@
       (rcirc-styles--hide-preview)
       (should (eq not-called nil))))))
 
-;; ;; Administrative details and suchlike.
+;; Administrative details and suchlike.
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-map-preview nil
+  "Should correctly define `rcirc-styles-map' bindings for styled text preview."
+  (let ((expected #'rcirc-styles-toggle-preview)
+        (result (lookup-key rcirc-styles-map (kbd "C-p"))))
+    (should (cl-equalp result expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-map-insert-attr nil
+  "Should correctly define `rcirc-styles-map' binding for attribute insertion."
+  (let ((expected #'rcirc-styles-insert-attribute)
+        (result (lookup-key rcirc-styles-map (kbd "C-a"))))
+    (should (cl-equalp result expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-map-insert-color nil
+  "Should correctly define `rcirc-styles-map' binding for color insertion."
+  (let ((expected #'rcirc-styles-insert-color)
+        (result (lookup-key rcirc-styles-map (kbd "C-c"))))
+    (should (cl-equalp result expected))))
 
 (ert-deftest rcirc-styles-tests/rcirc-styles-disable-rcirc-controls nil
   "Should remove rcirc-controls' hooks, if they're defined."

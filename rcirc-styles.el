@@ -337,15 +337,6 @@ invoked outside that context."
 ;; Functions and variables related to convenient attribute and color insertion.
 ;; 
 
-(defvar rcirc-styles-insert-map
-  (make-sparse-keymap)
-  "Keymap binding `rcirc-styles-insert' functions.")
-
-(define-key rcirc-styles-insert-map
-    (kbd "C-a") #'rcirc-styles-insert-attribute)
-(define-key rcirc-styles-insert-map
-    (kbd "C-c") #'rcirc-styles-insert-color)
-
 (defun rcirc-styles--read-color (prompt &optional allow-empty)
   "Prompt for a color name, providing completion over known
 values."
@@ -392,13 +383,6 @@ When called interactively, prompt for an attribute name,
 ;;
 ;; Functions and variables related to previewing styled text.
 ;;
-
-(defvar rcirc-styles-map
-  (make-sparse-keymap)
-  "Keymap binding `rcirc-styles-insert' functions.")
-
-(define-key rcirc-styles-map
-    (kbd "C-p") #'rcirc-styles-toggle-preview)
 
 (defvar rcirc-styles-previewed-input nil
   "Literal input currently under preview with
@@ -460,6 +444,21 @@ state. Don't do that."
     (setq rcirc-styles-previewed-input nil)
     (setq rcirc-styles-previewing nil)
     (message "Editing input - C-c C-s C-p to preview styles")))
+
+;;
+;; Keymap definition and bindings; administrative etc.
+;;
+
+(defvar rcirc-styles-map
+  (make-sparse-keymap)
+  "Keymap binding `rcirc-styles-insert' functions.")
+
+(define-key rcirc-styles-map
+    (kbd "C-p") #'rcirc-styles-toggle-preview)
+(define-key rcirc-styles-map
+    (kbd "C-a") #'rcirc-styles-insert-attribute)
+(define-key rcirc-styles-map
+    (kbd "C-c") #'rcirc-styles-insert-color)
 
 (defun rcirc-styles-disable-rcirc-controls nil
   "Disable rcirc-controls.el, if it is installed."
