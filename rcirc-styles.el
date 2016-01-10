@@ -144,7 +144,7 @@ mind when invoked outside that context."
          ranges
          ;; the current foreground and background colors, if any
          fg bg
-         
+         ;; which kind of specification, if any, we found here
          found-fg found-bg)
 
     ;; begin from the start of the new message
@@ -197,6 +197,7 @@ mind when invoked outside that context."
                 ;; move point past it
                 (forward-char (1+ (length (match-string 1))))))
 
+          ;; if we have a bare ^C, treat it like ^O (discontinue color specs)
           (if (and (not found-fg)
                    (not found-bg))
                    (progn
@@ -218,8 +219,10 @@ mind when invoked outside that context."
                                    :bg ,bg))
                (setq ranges (push range ranges))
 
-               ;; finally, move point to the next unexamined char
-               (forward-char 1))
+               ;; finally, move point to the next unexamined char,
+               ;; unless we're already at end of buffer
+               (and (not (equal (point) (point-max)))
+                    (forward-char 1)))
 
           (setq deletes (push
                          `(,delete-from . ,delete-length)
@@ -369,18 +372,20 @@ values."
         val
         nil)))
 
-(defun rcirc-styles-insert-color (fg &optional bg)
+(defun rcirc-styles-insert-color (&optional fg bg)
   "Insert at point a color code representing foreground FG and
 background BG.
 
 When called interactively, prompt for both values, providing
 completion over known values."
   (interactive (list
-                (rcirc-styles--read-color "Foreground")
+                (rcirc-styles--read-color "Foreground" t)
                 (rcirc-styles--read-color "Background" t)))
-  (insert "\C-c"
+  (insert "\C-c")
+  (and (not (null fg))
+       (insert
           (number-to-string
-           (cl-position fg rcirc-styles-color-vector :test #'string=)))
+           (cl-position fg rcirc-styles-color-vector :test #'string=))))
   (and (not (null bg))
        (insert
         ","
