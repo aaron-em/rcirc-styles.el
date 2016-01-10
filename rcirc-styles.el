@@ -219,8 +219,10 @@ mind when invoked outside that context."
                                    :bg ,bg))
                (setq ranges (push range ranges))
 
-               ;; finally, move point to the next unexamined char
-               (forward-char 1))
+               ;; finally, move point to the next unexamined char,
+               ;; unless we're already at end of buffer
+               (and (not (equal (point) (point-max)))
+                    (forward-char 1)))
 
           (setq deletes (push
                          `(,delete-from . ,delete-length)
@@ -370,7 +372,7 @@ values."
         val
         nil)))
 
-(defun rcirc-styles-insert-color (fg &optional bg)
+(defun rcirc-styles-insert-color (&optional fg bg)
   "Insert at point a color code representing foreground FG and
 background BG.
 

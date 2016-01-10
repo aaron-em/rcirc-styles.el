@@ -207,39 +207,59 @@
 
 ;; Color and attribute insertion functions.
 
+(ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-noargs nil
+  "Should insert a correct color code given no arguments."
+  (let ((expected "")
+        results)
+    (cl-letf (((symbol-function #'insert)
+               #'(lambda (&rest vals)
+                   (push (mapconcat #'identity vals "") results))))
+      (rcirc-styles-insert-color))
+    (should (cl-equalp (mapconcat #'identity (reverse results) "") expected))))
+
 (ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-return nil
-  "Should insert a correct color code given two valid inputs."
-  (let ((expected '("3" ",1"))
+  "Should insert a correct color code given two valid args."
+  (let ((expected "3,1")
         results)
     (cl-letf (((symbol-function #'insert)
                #'(lambda (&rest vals)
                    (push (mapconcat #'identity vals "") results))))
       (rcirc-styles-insert-color "green" "black"))
-    (setq results (reverse results)) ;; because `push' is actually shift
+    (setq results (mapconcat #'identity (reverse results) "")) ;; because `push' is actually shift
     (should (cl-equalp results expected))))
 
-(ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-one-arg-nil nil
-  "Should insert a correct color code given one valid input (and no second)."
-    (let ((expected '("3"))
+(ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-bg nil
+  "Should insert a correct color code given only a background arg."
+    (let ((expected ",3")
+        results)
+    (cl-letf (((symbol-function #'insert)
+               #'(lambda (&rest vals)
+                   (push (mapconcat #'identity vals "") results))))
+      (rcirc-styles-insert-color nil "green"))
+    (should (cl-equalp (mapconcat #'identity (reverse results) "") expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-fg-and-nil nil
+  "Should insert a correct color code given valid foreground arg (and no background)."
+    (let ((expected "3")
         results)
     (cl-letf (((symbol-function #'insert)
                #'(lambda (&rest vals)
                    (push (mapconcat #'identity vals "") results))))
       (rcirc-styles-insert-color "green"))
-    (should (cl-equalp results expected))))
+    (should (cl-equalp (mapconcat #'identity (reverse results) "") expected))))
 
-(ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-one-arg-str nil
-  "Should insert a correct color code given one valid input (and an empty string as the second)."
-    (let ((expected '("3"))
+(ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-fg-and-str nil
+  "Should insert a correct color code given valid foreground arg (and an empty string as the background)."
+    (let ((expected "3")
         results)
     (cl-letf (((symbol-function #'insert)
                #'(lambda (&rest vals)
                    (push (mapconcat #'identity vals "") results))))
       (rcirc-styles-insert-color "green" nil))
-    (should (cl-equalp results expected))))
+    (should (cl-equalp (mapconcat #'identity (reverse results) "") expected))))
 
 (ert-deftest rcirc-styles-tests/rcirc-styles-insert-attribute-return nil
-  "Should return a correct attribute code given a valid input."
+  "Should return a correct attribute code given a valid arg."
   (let ((expected '(""))
         results)
     (cl-letf (((symbol-function #'insert)
@@ -249,7 +269,7 @@
     (should (equal results expected))))
 
 (ert-deftest rcirc-styles-tests/rcirc-styles--read-attribute-require-value nil
-  "Should require a valid input."
+  "Should require a valid arg."
   (let ((args '("bogus" "bold"))
         (expected "bold")
         result)
