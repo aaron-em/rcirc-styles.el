@@ -91,7 +91,8 @@
   '(("\C-b" . bold)
     ("\C-]" . italic)
     ("\C-_" . underline)
-    ("\C-v" . inverse))
+    ("\C-v" . inverse)
+    ("\C-o" . default))
   "mIRC text attribute specification characters.")
 
 (defvar rcirc-styles-color-vector ["white"
@@ -267,8 +268,9 @@ mind when invoked outside that context."
       (dolist (pair rcirc-styles-attribute-alist)
         (let ((char (car pair))
               (face (cdr pair)))
-          ;; If so, toggle that attribute in `attrs'...
-          (when (looking-at char)
+          ;; If so, and if it's not C-o, toggle that attribute in `attrs'...
+          (when (and (not (eq face 'default))
+                     (looking-at char))
             (setq deletes (push `(,(point) . 1) deletes))
             (forward-char 1)
             (setq advanced t)
@@ -332,15 +334,66 @@ invoked outside that context."
     (rcirc-styles-markup-remove-control-o)))
 
 ;;
+;; Functions and variables related to convenient attribute and color insertion.
+;; 
+
+(defun rcirc-styles--read-color (prompt &optional allow-empty)
+  "Prompt for a color name, providing completion over known
+values."
+  (let ((colors (mapcar #'identity rcirc-styles-color-vector))
+        val)
+    (while (not (or (and allow-empty (string= val ""))
+                    (not (null (member val colors)))))
+      (setq val
+            (completing-read (concat prompt
+                                     (and allow-empty " (RET for none)")
+                                     ": ")
+                             colors nil (not allow-empty) nil nil "")))
+    (if (and (stringp val)
+             (not (string= val "")))
+        val
+        nil)))
+
+(defun rcirc-styles-insert-color (fg &optional bg)
+  "Insert at point a color code representing foreground FG and
+background BG.
+
+When called interactively, prompt for both values, providing
+completion over known values."
+  (interactive (list
+                (rcirc-styles--read-color "Foreground")
+                (rcirc-styles--read-color "Background" t)))
+  (insert "\C-c"
+          (number-to-string
+           (cl-position fg rcirc-styles-color-vector :test #'string=)))
+  (and (not (null bg))
+       (insert
+        ","
+        (number-to-string
+         (cl-position bg rcirc-styles-color-vector :test #'string=)))))
+
+(defun rcirc-styles--read-attribute nil
+  "Prompt for an attribute name, providing completion over known
+values."
+  (let ((val ""))
+    (while (not (rassoc (intern val) rcirc-styles-attribute-alist))
+      (setq val (completing-read
+                 "Attribute: "
+                 (mapcar #'cdr rcirc-styles-attribute-alist) nil t)))
+    val))
+
+(defun rcirc-styles-insert-attribute (attr)
+  "Insert at point an attribute code representing the desired
+attribute ATTR.
+
+When called interactively, prompt for an attribute name,
+  providing completion over known values."
+  (interactive (list (rcirc-styles--read-attribute)))
+  (insert (car (rassoc (intern attr) rcirc-styles-attribute-alist))))
+
+;;
 ;; Functions and variables related to previewing styled text.
 ;;
-
-(defvar rcirc-styles-map
-  (make-sparse-keymap)
-  "Keymap binding `rcirc-styles-insert' functions.")
-
-(define-key rcirc-styles-map
-    (kbd "C-p") #'rcirc-styles-toggle-preview)
 
 (defvar rcirc-styles-previewed-input nil
   "Literal input currently under preview with
@@ -402,6 +455,21 @@ state. Don't do that."
     (setq rcirc-styles-previewed-input nil)
     (setq rcirc-styles-previewing nil)
     (message "Editing input - C-c C-s C-p to preview styles")))
+
+;;
+;; Keymap definition and bindings; administrative etc.
+;;
+
+(defvar rcirc-styles-map
+  (make-sparse-keymap)
+  "Keymap binding `rcirc-styles-insert' functions.")
+
+(define-key rcirc-styles-map
+    (kbd "C-p") #'rcirc-styles-toggle-preview)
+(define-key rcirc-styles-map
+    (kbd "C-a") #'rcirc-styles-insert-attribute)
+(define-key rcirc-styles-map
+    (kbd "C-c") #'rcirc-styles-insert-color)
 
 (defun rcirc-styles-disable-rcirc-controls nil
   "Disable rcirc-controls.el, if it is installed."

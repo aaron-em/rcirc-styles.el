@@ -176,13 +176,88 @@
                                      rcirc-styles-tests/face-name)))
       (should (cl-equalp result expected)))))
 
-;; rcirc-styles-map definitions.
+;; Color and attribute insertion functions.
 
-(ert-deftest rcirc-styles-tests/rcirc-styles-map-defs nil
-  "Should correctly define `rcirc-styles-map' bindings for styled text preview."
-  (let ((expected #'rcirc-styles-toggle-preview)
-        (result (lookup-key rcirc-styles-map (kbd "C-p"))))
-    (should (cl-equalp result expected))))
+(ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-return nil
+  "Should insert a correct color code given two valid inputs."
+  (let ((expected '("3" ",1"))
+        results)
+    (cl-letf (((symbol-function #'insert)
+               #'(lambda (&rest vals)
+                   (push (mapconcat #'identity vals "") results))))
+      (rcirc-styles-insert-color "green" "black"))
+    (setq results (reverse results)) ;; because `push' is actually shift
+    (should (cl-equalp results expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-one-arg-nil nil
+  "Should insert a correct color code given one valid input (and no second)."
+    (let ((expected '("3"))
+        results)
+    (cl-letf (((symbol-function #'insert)
+               #'(lambda (&rest vals)
+                   (push (mapconcat #'identity vals "") results))))
+      (rcirc-styles-insert-color "green"))
+    (should (cl-equalp results expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-one-arg-str nil
+  "Should insert a correct color code given one valid input (and an empty string as the second)."
+    (let ((expected '("3"))
+        results)
+    (cl-letf (((symbol-function #'insert)
+               #'(lambda (&rest vals)
+                   (push (mapconcat #'identity vals "") results))))
+      (rcirc-styles-insert-color "green" nil))
+    (should (cl-equalp results expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-insert-attribute-return nil
+  "Should return a correct attribute code given a valid input."
+  (let ((expected '(""))
+        results)
+    (cl-letf (((symbol-function #'insert)
+               #'(lambda (&rest vals)
+                   (push (mapconcat #'identity vals "") results))))
+      (rcirc-styles-insert-attribute "bold"))
+    (should (equal results expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--read-attribute-require-value nil
+  "Should require a valid input."
+  (let ((args '("bogus" "bold"))
+        (expected "bold")
+        result)
+    (cl-letf (((symbol-function #'completing-read)
+               #'(lambda (&rest ignore) (pop args))))
+      (setq result (rcirc-styles--read-attribute)))
+    (should (equal result expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--read-color-require-valid nil
+  "Should not accept an invalid color name."
+  (let ((args '("bogus" "green"))
+        (expected "green")
+        result)
+    (cl-letf (((symbol-function #'completing-read)
+               #'(lambda (&rest ignore) (pop args))))
+      (setq result (rcirc-styles--read-color "foo")))
+    (should (string= result expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--read-color-require-value nil
+  "Should not accept an empty color name without allow-empty."
+  (let ((args '("" "green"))
+        (expected "green")
+        result)
+    (cl-letf (((symbol-function #'completing-read)
+               #'(lambda (&rest ignore) (pop args))))
+      (setq result (rcirc-styles--read-color "foo")))
+    (should (string= result expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--read-color-allow-empty nil
+  "Should accept an empty color name with allow-empty."
+  (let ((args '("" "green"))
+        (expected nil)
+        result)
+    (cl-letf (((symbol-function #'completing-read)
+               #'(lambda (&rest ignore) (pop args))))
+      (setq result (rcirc-styles--read-color "foo" t)))
+    (should (string= result expected))))
 
 ;; rcirc-styles-toggle-preview.
 
@@ -213,8 +288,6 @@
     (setq major-mode 'rcirc-mode)
     (setq rcirc-styles-previewing t)
     (let (right-call wrong-call)
-      ;; (cl-flet ((rcirc-styles--show-preview nil (setq wrong-call t))
-      ;;           (rcirc-styles--hide-preview nil (setq right-call t)))
       (cl-letf (((symbol-function #'rcirc-styles--show-preview)
                  #'(lambda nil (setq wrong-call t)))
                 ((symbol-function #'rcirc-styles--hide-preview)
@@ -223,7 +296,7 @@
         (should (eq right-call t))
         (should (eq wrong-call nil))))))
 
-;; ;; rcirc-styles--show-preview.
+;; rcirc-styles--show-preview.
 
 (ert-deftest rcirc-styles-tests/rcirc-styles--show-preview-works nil
   "Should correctly replace literal text with style codes, with styled preview text."
@@ -259,7 +332,7 @@
         (rcirc-styles--show-preview))
       (should (eq not-called nil)))))
 
-;; ;; rcirc-styles--hide-preview.
+;; rcirc-styles--hide-preview.
 
 (ert-deftest rcirc-styles-tests/rcirc-styles--hide-preview-works nil
   "Should correctly replace styled preview text with previously cached input."
@@ -286,7 +359,25 @@
       (rcirc-styles--hide-preview)
       (should (eq not-called nil))))))
 
-;; ;; Administrative details and suchlike.
+;; Administrative details and suchlike.
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-map-preview nil
+  "Should correctly define `rcirc-styles-map' bindings for styled text preview."
+  (let ((expected #'rcirc-styles-toggle-preview)
+        (result (lookup-key rcirc-styles-map (kbd "C-p"))))
+    (should (cl-equalp result expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-map-insert-attr nil
+  "Should correctly define `rcirc-styles-map' binding for attribute insertion."
+  (let ((expected #'rcirc-styles-insert-attribute)
+        (result (lookup-key rcirc-styles-map (kbd "C-a"))))
+    (should (cl-equalp result expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-map-insert-color nil
+  "Should correctly define `rcirc-styles-map' binding for color insertion."
+  (let ((expected #'rcirc-styles-insert-color)
+        (result (lookup-key rcirc-styles-map (kbd "C-c"))))
+    (should (cl-equalp result expected))))
 
 (ert-deftest rcirc-styles-tests/rcirc-styles-disable-rcirc-controls nil
   "Should remove rcirc-controls' hooks, if they're defined."
