@@ -26,6 +26,8 @@
     :bold-inverse-face ((bold) (bold inverse))
     :green-bold-face ((bold)
                       ((foreground-color . "green")))
+    :green-red-face (((background-color . "red")
+                      (foreground-color . "green")))
     :blue-red-face (((background-color . "blue")
                      (foreground-color . "red")))
     :green-blue-face (((background-color . "blue")
@@ -43,6 +45,15 @@
                                      rcirc-styles-tests/face-name)))
       (should (cl-equalp result expected)))))
 
+(ert-deftest rcirc-styles-tests/propertize-background-color nil
+  "Should propertize a background color specification correctly."
+  (with-style-sandbox ",2colorful"
+    (rcirc-styles-markup-colors)
+    (let ((expected (plist-get rcirc-styles-tests/fixtures :blue-face))
+          (result (get-text-property (point-min) 
+                                     rcirc-styles-tests/face-name)))
+      (should (cl-equalp result expected)))))
+
 (ert-deftest rcirc-styles-tests/propertize-both-colors nil
   "Should propertize a foreground & background color specification correctly."
   (with-style-sandbox "3,2colorful"
@@ -52,11 +63,20 @@
                                      rcirc-styles-tests/face-name)))
       (should (cl-equalp result expected)))))
 
-(ert-deftest rcirc-styles-tests/propertize-new-color nil
-  "Should propertize implicit color specification correctly."
+(ert-deftest rcirc-styles-tests/propertize-new-color-fg nil
+  "Should preserve existing background when new foreground color given."
   (with-style-sandbox "3,2color4ful"
     (rcirc-styles-markup-colors)
     (let ((expected (plist-get rcirc-styles-tests/fixtures :blue-red-face))
+          (result (get-text-property (+ (point-min) 6)
+                                     rcirc-styles-tests/face-name)))
+      (should (cl-equalp result expected)))))
+
+(ert-deftest rcirc-styles-tests/propertize-new-color-bg nil
+  "Should preserve existing foreground when new background color given."
+  (with-style-sandbox "3,2color,4ful"
+    (rcirc-styles-markup-colors)
+    (let ((expected (plist-get rcirc-styles-tests/fixtures :green-red-face))
           (result (get-text-property (+ (point-min) 6)
                                      rcirc-styles-tests/face-name)))
       (should (cl-equalp result expected)))))
@@ -76,6 +96,15 @@
     (rcirc-styles-markup-colors)
     (let ((expected nil)
           (result (get-text-property (+ (point-min) 6) 
+                                     rcirc-styles-tests/face-name)))
+      (should (cl-equalp result expected)))))
+
+(ert-deftest rcirc-styles-tests/propertize-color-until-0x03 nil
+  "Should terminate color specification on bare ^C correctly."
+  (with-style-sandbox "3colorful"
+    (rcirc-styles-markup-colors)
+    (let ((expected nil)
+          (result (get-text-property (point-max) 
                                      rcirc-styles-tests/face-name)))
       (should (cl-equalp result expected)))))
 

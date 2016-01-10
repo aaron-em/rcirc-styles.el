@@ -143,13 +143,17 @@ mind when invoked outside that context."
          ;; a list of ranges we'll want to facify, as plists (see below)
          ranges
          ;; the current foreground and background colors, if any
-         fg bg)
+         fg bg
+         
+         found-fg found-bg)
 
     ;; begin from the start of the new message
     (goto-char (point-min))
 
     ;; walk along the message
     (while (not (cl-equalp (point) (point-max)))
+      (setq found-fg nil)
+      (setq found-bg nil)
       
       ;; ^O means "turn off all formatting"
       (if (looking-at "\C-o")
@@ -166,20 +170,25 @@ mind when invoked outside that context."
               (delete-length 1)
               range)
 
+          ;; advance past ^C and set a default range to remove it
+          (forward-char 1)
+
           ;; we have a foreground color spec
-          (if (looking-at "\C-c\\([0-9]\\{1,2\\}\\)")
+          (if (looking-at "\\([0-9]\\{1,2\\}\\)")
               (progn
+                (setq found-fg t)
                 ;; capture the specified color
                 (setq fg (string-to-number (match-string 1)))
                 ;; extend the delete length to include it
                 (setq delete-length (+ delete-length
                                        (length (match-string 1))))
                 ;; move point past it
-                (forward-char (1+ (length (match-string 1))))))
+                (forward-char (length (match-string 1)))))
 
-          ;; we also have a background color spec
+          ;; we have a background color spec
           (if (looking-at ",\\([0-9]\\{1,2\\}\\)")
               (progn
+                (setq found-bg t)
                 ;; capture it
                 (setq bg (string-to-number (match-string 1)))
                 ;; extend delete length over it
@@ -188,27 +197,33 @@ mind when invoked outside that context."
                 ;; move point past it
                 (forward-char (1+ (length (match-string 1))))))
 
-          ;; push a facification spec plist into `range'
-          (setq range `(:from ,(point)
-                        ;; range ends at:
-                        :to ,(save-excursion
-                               ;; either the next relevant control char
-                               (or (re-search-forward "\C-o\\|\C-c" nil t)
-                                   ;; or the last char before whitespace to eol
-                                   (re-search-forward "[:space:]*$" nil t)
-                                   ;; or, failing all else, point-max
-                                   (point-max)))
-                        :fg ,fg
-                        :bg ,bg))
-          (setq ranges (push range ranges))
+          (if (and (not found-fg)
+                   (not found-bg))
+                   (progn
+                     (setq fg nil)
+                     (setq bg nil)))
 
-          ;; push the delete specification into `deletes'
+          ;; if we got any color specs, update ranges and deletes
+          (and (or found-fg found-bg)
+               (setq range `(:from ,(point)
+                                   ;; range ends at:
+                                   :to ,(save-excursion
+                                         ;; either the next relevant control char
+                                         (or (re-search-forward "\C-o\\|\C-c" nil t)
+                                             ;; or the last char before whitespace to eol
+                                             (re-search-forward "[:space:]*$" nil t)
+                                             ;; or, failing all else, point-max
+                                             (point-max)))
+                                   :fg ,fg
+                                   :bg ,bg))
+               (setq ranges (push range ranges))
+
+               ;; finally, move point to the next unexamined char
+               (forward-char 1))
+
           (setq deletes (push
                          `(,delete-from . ,delete-length)
-                         deletes))
-
-          ;; finally, move point to the next unexamined char
-          (forward-char 1))))
+                         deletes)))))
 
     ;; facify all the known ranges, ignoring unspecified or
     ;; out-of-range color values
