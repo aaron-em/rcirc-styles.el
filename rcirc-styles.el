@@ -1,7 +1,7 @@
 ;;; rcirc-styles.el --- support mIRC-style color and attribute codes
 
-;; Package-Version: 20151220.001
-;; Copyright 2015 Aaron Miller <me@aaron-miller.me>
+;; Package-Version: 20160110.001
+;; Copyright 2016 Aaron Miller <me@aaron-miller.me>
 ;; Package-Requires: ((cl-lib "0.5"))
 
 ;; This program is free software; you can redistribute it and/or
@@ -55,11 +55,18 @@
 ;; * ^V as the specifier for reverse video, rather than italics.
 ;; * ^] as the specifier for italics.
 
-;; As far as I'm aware, this code implements correct and complete
-;; support for mIRC colors and attributes.  If I've missed something,
-;; let me know! The canonical version of this file lives in the repo
-;; at https://github.com/aaron-em/rcirc-styles.el, and that's the
-;; place to open issues -- or, even better, pull requests.
+;; There are a couple of attribute codes which I've only seen
+;; mentioned in a few places, and haven't been able to confirm
+;; whether or how widely they're used:
+;; * ^F for flashing text;
+;; * ^K for fixed-width text.
+;; Since these appear to be so ill-used, I'm not terribly anxious to
+;; support them in rcirc, but they are on my radar. If you want one or
+;; both of these, open an issue!
+
+;; As far as I'm aware, this code implements correct and, subject to
+;; the preceding caveats, complete support for mIRC colors and
+;; attributes. If I've missed something, let me know!
 
 ;; Finally, a note: Since this package entirely obsoletes
 ;; rcirc-controls, it will attempt rather vigorously to disable its
@@ -67,6 +74,75 @@
 ;; `rcirc-markup-text-functions' if they are installed.  Not to do so,
 ;; when both packages are loaded, would result in severely broken
 ;; style markup behavior.
+
+;;; Usage:
+
+;; Once installed, this package will activate when
+;; `package-activate' is called in your init process. If you happen
+;; to have rcirc-controls.el installed, and it's already been
+;; activated, then rcirc-styles will supersede it at that time.
+
+;; You don't need to do anything to see styled text sent by other IRC
+;; users in your channels; it'll Just Work™.
+
+;; If you want to send styled text of your own, you have a couple of
+;; methods available.
+
+;; First, you can always just insert color and attribute codes
+;; directly: for example, =C-q C-c 1 , 13= to insert the color code
+;; for black text on a pink background, or =C-q C-b= to insert the
+;; attribute code for bold text.
+
+;; Second, you can use the convenience functions which rcirc-styles
+;; provides since version 1.3 for this purpose:
+;; `rcirc-styles-insert-color' and
+;; `rcirc-styles-insert-attribute'. Both are interactive functions, so
+;; can be invoked via M-x, and both provide completion of valid
+;; values and will not accept invalid ones.
+
+;; Version 1.3 also introduces a convenience function,
+;; `rcirc-styles-toggle-preview', for previewing styled input as it
+;; will appear once sent, so that you can see how your text will look
+;; before actually sending it. Invoke this function to toggle between
+;; editable input with literal style codes, and a read-only preview of
+;; the same input with styles applied.
+
+;; All of these convenience functions are also bound to a keymap,
+;;  `rcirc-styles-map', which you can attach to a key sequence in
+;;  `rcirc-mode-map' for additional convenice. For example, if you
+;;  include in your init file
+
+;;     (define-key rcirc-mode-map (kbd "C-c C-s") rcirc-styles-map)
+
+;; then the following keybindings will be available in rcirc buffers:
+;; - C-c C-s C-c: insert a color code
+;; - C-c C-s C-a: insert an attribute code
+;; - C-c C-s C-p: toggle styled preview mode
+
+;; In a future version, I plan to automate the binding to
+;; =rcirc-mode-map= and make it customizable; in the meantime, the
+;; above snippet should suffice for most purposes. (If you want to see
+;; customization implemented faster, comment on the relevant Github
+;; issue[1] and ask!)
+
+;; Also in a future version, I plan to add shortcut keybindings for
+;; commonly used attributes, so that e.g. C-c C-s b will insert the
+;; bold attribute code directly, rather than requiring all of C-c C-s
+;; C-a bold RET. (As above, if you want to see it faster, use the
+;; relevant Github issue [2] to let me know!)
+
+;; [1] https://github.com/aaron-em/rcirc-styles.el/issues/7
+;; [2] https://github.com/aaron-em/rcirc-styles.el/issues/8
+
+;;; Contributing:
+
+;; The canonical version of this package lives in a Git repository
+;; [REPO] maintained through Github. To request a feature or report a
+;; bug, open an issue there with as much detail as you can provide
+;; about what you'd like to see, or what went wrong and how. To
+;; contribute a feature or fix a bug, open a pull request with your
+;; code. Don't hesitate to do either; if you have an opinion on how to
+;; make rcirc-styles better, I want to hear about it!
 
 ;;; Code:
 
