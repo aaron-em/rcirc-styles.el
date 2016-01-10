@@ -1,7 +1,7 @@
 ;;; rcirc-styles.el --- support mIRC-style color and attribute codes
 
-;; Package-Version: 20151220.001
-;; Copyright 2015 Aaron Miller <me@aaron-miller.me>
+;; Package-Version: 20160110.001
+;; Copyright 2016 Aaron Miller <me@aaron-miller.me>
 ;; Package-Requires: ((cl-lib "0.5"))
 
 ;; This program is free software; you can redistribute it and/or
@@ -55,11 +55,18 @@
 ;; * ^V as the specifier for reverse video, rather than italics.
 ;; * ^] as the specifier for italics.
 
-;; As far as I'm aware, this code implements correct and complete
-;; support for mIRC colors and attributes.  If I've missed something,
-;; let me know! The canonical version of this file lives in the repo
-;; at https://github.com/aaron-em/rcirc-styles.el, and that's the
-;; place to open issues -- or, even better, pull requests.
+;; There are a couple of attribute codes which I've only seen
+;; mentioned in a few places, and haven't been able to confirm
+;; whether or how widely they're used:
+;; * ^F for flashing text;
+;; * ^K for fixed-width text.
+;; Since these appear to be so ill-used, I'm not terribly anxious to
+;; support them in rcirc, but they are on my radar. If you want one or
+;; both of these, open an issue!
+
+;; As far as I'm aware, this code implements correct and, subject to
+;; the preceding caveats, complete support for mIRC colors and
+;; attributes. If I've missed something, let me know!
 
 ;; Finally, a note: Since this package entirely obsoletes
 ;; rcirc-controls, it will attempt rather vigorously to disable its
@@ -68,10 +75,83 @@
 ;; when both packages are loaded, would result in severely broken
 ;; style markup behavior.
 
+;;; Usage:
+
+;; Once installed, this package will activate when
+;; `package-activate' is called in your init process. If you happen
+;; to have rcirc-controls.el installed, and it's already been
+;; activated, then rcirc-styles will supersede it at that time.
+
+;; You don't need to do anything to see styled text sent by other IRC
+;; users in your channels; it'll Just Work™.
+
+;; If you want to send styled text of your own, you have a couple of
+;; methods available.
+
+;; First, you can always just insert color and attribute codes
+;; directly: for example, =C-q C-c 1 , 13= to insert the color code
+;; for black text on a pink background, or =C-q C-b= to insert the
+;; attribute code for bold text.
+
+;; Second, you can use the convenience functions which rcirc-styles
+;; provides since version 1.3 for this purpose:
+;; `rcirc-styles-insert-color' and
+;; `rcirc-styles-insert-attribute'. Both are interactive functions, so
+;; can be invoked via M-x, and both provide completion of valid
+;; values and will not accept invalid ones.
+
+;; Version 1.3 also introduces a convenience function,
+;; `rcirc-styles-toggle-preview', for previewing styled input as it
+;; will appear once sent, so that you can see how your text will look
+;; before actually sending it. Invoke this function to toggle between
+;; editable input with literal style codes, and a read-only preview of
+;; the same input with styles applied.
+
+;; All of these convenience functions are also bound to a keymap,
+;;  `rcirc-styles-map', which you can attach to a key sequence in
+;;  `rcirc-mode-map' for additional convenice. For example, if you
+;;  include in your init file
+
+;;     (define-key rcirc-mode-map (kbd "C-c C-s") rcirc-styles-map)
+
+;; then the following keybindings will be available in rcirc buffers:
+;; - C-c C-s C-c: insert a color code
+;; - C-c C-s C-a: insert an attribute code
+;; - C-c C-s C-p: toggle styled preview mode
+
+;; In a future version, I plan to automate the binding to
+;; =rcirc-mode-map= and make it customizable; in the meantime, the
+;; above snippet should suffice for most purposes. (If you want to see
+;; customization implemented faster, comment on the relevant Github
+;; issue[1] and ask!)
+
+;; Also in a future version, I plan to add shortcut keybindings for
+;; commonly used attributes, so that e.g. C-c C-s b will insert the
+;; bold attribute code directly, rather than requiring all of C-c C-s
+;; C-a bold RET. (As above, if you want to see it faster, use the
+;; relevant Github issue [2] to let me know!)
+
+;; [1] https://github.com/aaron-em/rcirc-styles.el/issues/7
+;; [2] https://github.com/aaron-em/rcirc-styles.el/issues/8
+
+;;; Contributing:
+
+;; The canonical version of this package lives in a Git repository
+;; [REPO] maintained through Github. To request a feature or report a
+;; bug, open an issue there with as much detail as you can provide
+;; about what you'd like to see, or what went wrong and how. To
+;; contribute a feature or fix a bug, open a pull request with your
+;; code. Don't hesitate to do either; if you have an opinion on how to
+;; make rcirc-styles better, I want to hear about it!
+
 ;;; Code:
 
 (require 'cl-lib)
 (require 'rcirc)
+
+;;
+;; Functions and variables related to attribute and color markup.
+;;
 
 (defalias 'rcirc-styles-set-face-inverse-video
   (symbol-function
@@ -87,7 +167,8 @@
   '(("\C-b" . bold)
     ("\C-]" . italic)
     ("\C-_" . underline)
-    ("\C-v" . inverse))
+    ("\C-v" . inverse)
+    ("\C-o" . default))
   "mIRC text attribute specification characters.")
 
 (defvar rcirc-styles-color-vector ["white"
@@ -139,7 +220,7 @@ mind when invoked outside that context."
          ranges
          ;; the current foreground and background colors, if any
          fg bg
-         
+         ;; which kind of specification, if any, we found here
          found-fg found-bg)
 
     ;; begin from the start of the new message
@@ -192,6 +273,7 @@ mind when invoked outside that context."
                 ;; move point past it
                 (forward-char (1+ (length (match-string 1))))))
 
+          ;; if we have a bare ^C, treat it like ^O (discontinue color specs)
           (if (and (not found-fg)
                    (not found-bg))
                    (progn
@@ -213,8 +295,10 @@ mind when invoked outside that context."
                                    :bg ,bg))
                (setq ranges (push range ranges))
 
-               ;; finally, move point to the next unexamined char
-               (forward-char 1))
+               ;; finally, move point to the next unexamined char,
+               ;; unless we're already at end of buffer
+               (and (not (equal (point) (point-max)))
+                    (forward-char 1)))
 
           (setq deletes (push
                          `(,delete-from . ,delete-length)
@@ -279,7 +363,8 @@ mind when invoked outside that context."
         (let ((char (car pair))
               (face (cdr pair)))
           ;; If so, and if it's not C-o, toggle that attribute in `attrs'...
-          (when (looking-at char)
+          (when (and (not (eq face 'default))
+                     (looking-at char))
             (setq deletes (push `(,(point) . 1) deletes))
             (forward-char 1)
             (setq advanced t)
@@ -334,12 +419,153 @@ This function is intended to be hung off
 constrain point within the bounds of the newly received
 message.  It probably will not do what you have in mind when
 invoked outside that context."
+  (goto-char (point-min))
   (save-excursion
     (rcirc-styles-markup-colors))
   (save-excursion
     (rcirc-styles-markup-attributes))
   (save-excursion
     (rcirc-styles-markup-remove-control-o)))
+
+;;
+;; Functions and variables related to convenient attribute and color insertion.
+;; 
+
+(defun rcirc-styles--read-color (prompt &optional allow-empty)
+  "Prompt for a color name, providing completion over known
+values."
+  (let ((colors (mapcar #'identity rcirc-styles-color-vector))
+        val)
+    (while (not (or (and allow-empty (string= val ""))
+                    (not (null (member val colors)))))
+      (setq val
+            (completing-read (concat prompt
+                                     (and allow-empty " (RET for none)")
+                                     ": ")
+                             colors nil (not allow-empty) nil nil "")))
+    (if (and (stringp val)
+             (not (string= val "")))
+        val
+        nil)))
+
+(defun rcirc-styles-insert-color (&optional fg bg)
+  "Insert at point a color code representing foreground FG and
+background BG.
+
+When called interactively, prompt for both values, providing
+completion over known values."
+  (interactive (list
+                (rcirc-styles--read-color "Foreground" t)
+                (rcirc-styles--read-color "Background" t)))
+  (insert "\C-c")
+  (and (not (null fg))
+       (insert
+          (number-to-string
+           (cl-position fg rcirc-styles-color-vector :test #'string=))))
+  (and (not (null bg))
+       (insert
+        ","
+        (number-to-string
+         (cl-position bg rcirc-styles-color-vector :test #'string=)))))
+
+(defun rcirc-styles--read-attribute nil
+  "Prompt for an attribute name, providing completion over known
+values."
+  (let ((val ""))
+    (while (not (rassoc (intern val) rcirc-styles-attribute-alist))
+      (setq val (completing-read
+                 "Attribute: "
+                 (mapcar #'cdr rcirc-styles-attribute-alist) nil t)))
+    val))
+
+(defun rcirc-styles-insert-attribute (attr)
+  "Insert at point an attribute code representing the desired
+attribute ATTR.
+
+When called interactively, prompt for an attribute name,
+  providing completion over known values."
+  (interactive (list (rcirc-styles--read-attribute)))
+  (insert (car (rassoc (intern attr) rcirc-styles-attribute-alist))))
+
+;;
+;; Functions and variables related to previewing styled text.
+;;
+
+(defvar rcirc-styles-previewed-input nil
+  "Literal input currently under preview with
+`rcirc-styles-preview'.")
+(defvar rcirc-styles-previewing nil
+  "Whether we are currently previewing input in this buffer with
+`rcirc-styles-preview'.")
+(make-variable-buffer-local 'rcirc-styles-previewed-input)
+(make-variable-buffer-local 'rcirc-styles-previewing)
+
+(defun rcirc-styles-toggle-preview nil
+  "Switch the current buffer's state between literal input and a
+read-only preview of styled input.
+
+  This function has no effect in non-rcirc buffers."
+  (interactive)
+  (when (eq major-mode 'rcirc-mode)
+    (with-silent-modifications
+      (if rcirc-styles-previewing
+          (rcirc-styles--hide-preview)
+          (rcirc-styles--show-preview)))))
+
+(defun rcirc-styles--show-preview nil
+  "Put the current rcirc buffer in preview mode.
+
+Calling this function by hand may well hose your buffer
+state. Don't do that."
+  (when (and (not rcirc-styles-previewing)
+             (not rcirc-styles-previewed-input)
+             (< rcirc-prompt-end-marker (point-max)))
+    (let (input preview)
+      (goto-char rcirc-prompt-end-marker)
+      (setq input (buffer-substring (point) (point-max)))
+      (with-temp-buffer
+        (insert input)
+        (rcirc-styles-markup-styles)
+        (setq preview
+              (propertize (buffer-substring (point-min) (point-max))
+                          'read-only "In preview mode - C-c C-s C-p to continue editing")))
+      (goto-char rcirc-prompt-end-marker)
+      (delete-region (point) (point-max))
+      (insert preview)
+      (setq rcirc-styles-previewed-input input)
+      (setq rcirc-styles-previewing t)
+      (message "Previewing styled input - C-c C-s C-p to continue editing"))))
+
+(defun rcirc-styles--hide-preview nil
+  "Take the current rcirc buffer out of preview mode.
+
+Calling this function by hand may well hose your buffer
+state. Don't do that."
+  (when (and rcirc-styles-previewing
+             rcirc-styles-previewed-input)
+    (goto-char rcirc-prompt-end-marker)
+    (setq inhibit-read-only t)
+    (delete-region (point) (point-max))
+    (insert rcirc-styles-previewed-input)
+    (setq inhibit-read-only nil)
+    (setq rcirc-styles-previewed-input nil)
+    (setq rcirc-styles-previewing nil)
+    (message "Editing input - C-c C-s C-p to preview styles")))
+
+;;
+;; Keymap definition and bindings; administrative etc.
+;;
+
+(defvar rcirc-styles-map
+  (make-sparse-keymap)
+  "Keymap binding `rcirc-styles-insert' functions.")
+
+(define-key rcirc-styles-map
+    (kbd "C-p") #'rcirc-styles-toggle-preview)
+(define-key rcirc-styles-map
+    (kbd "C-a") #'rcirc-styles-insert-attribute)
+(define-key rcirc-styles-map
+    (kbd "C-c") #'rcirc-styles-insert-color)
 
 (defun rcirc-styles-disable-rcirc-controls nil
   "Disable rcirc-controls.el, if it is installed."
