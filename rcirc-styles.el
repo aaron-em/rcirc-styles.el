@@ -342,16 +342,19 @@ invoked outside that context."
 values."
   (let ((colors (mapcar #'identity rcirc-styles-color-vector))
         val)
-    (while (not (or (string= val "")
+    (while (not (or (and allow-empty (string= val ""))
                     (not (null (member val colors)))))
       (setq val
             (completing-read (concat prompt
                                      (and allow-empty " (RET for none)")
                                      ": ")
                              colors nil (not allow-empty) nil nil "")))
-    (if (stringp val) val nil)))
+    (if (and (stringp val)
+             (not (string= val "")))
+        val
+        nil)))
 
-(defun rcirc-styles-insert-color (fg bg)
+(defun rcirc-styles-insert-color (fg &optional bg)
   "Insert at point a color code representing foreground FG and
 background BG.
 
@@ -363,11 +366,21 @@ completion over known values."
   (insert "\C-c"
           (number-to-string
            (cl-position fg rcirc-styles-color-vector :test #'string=)))
-  (and (not (string= bg ""))
+  (and (not (null bg))
        (insert
         ","
         (number-to-string
          (cl-position bg rcirc-styles-color-vector :test #'string=)))))
+
+(defun rcirc-styles--read-attribute nil
+  "Prompt for an attribute name, providing completion over known
+values."
+  (let ((val ""))
+    (while (not (rassoc (intern val) rcirc-styles-attribute-alist))
+      (setq val (completing-read
+                 "Attribute: "
+                 (mapcar #'cdr rcirc-styles-attribute-alist) nil t)))
+    val))
 
 (defun rcirc-styles-insert-attribute (attr)
   "Insert at point an attribute code representing the desired
@@ -375,9 +388,7 @@ attribute ATTR.
 
 When called interactively, prompt for an attribute name,
   providing completion over known values."
-  (interactive (list
-                (completing-read "Attribute: "
-                                 (mapcar #'cdr rcirc-styles-attribute-alist) nil t)))
+  (interactive (list (rcirc-styles--read-attribute)))
   (insert (car (rassoc (intern attr) rcirc-styles-attribute-alist))))
 
 ;;

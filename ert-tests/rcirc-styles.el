@@ -176,6 +176,89 @@
                                      rcirc-styles-tests/face-name)))
       (should (cl-equalp result expected)))))
 
+;; Color and attribute insertion functions.
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-return nil
+  "Should insert a correct color code given two valid inputs."
+  (let ((expected '("3" ",1"))
+        results)
+    (cl-letf (((symbol-function #'insert)
+               #'(lambda (&rest vals)
+                   (push (mapconcat #'identity vals "") results))))
+      (rcirc-styles-insert-color "green" "black"))
+    (setq results (reverse results)) ;; because `push' is actually shift
+    (should (cl-equalp results expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-one-arg-nil nil
+  "Should insert a correct color code given one valid input (and no second)."
+    (let ((expected '("3"))
+        results)
+    (cl-letf (((symbol-function #'insert)
+               #'(lambda (&rest vals)
+                   (push (mapconcat #'identity vals "") results))))
+      (rcirc-styles-insert-color "green"))
+    (should (cl-equalp results expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-insert-color-one-arg-str nil
+  "Should insert a correct color code given one valid input (and an empty string as the second)."
+    (let ((expected '("3"))
+        results)
+    (cl-letf (((symbol-function #'insert)
+               #'(lambda (&rest vals)
+                   (push (mapconcat #'identity vals "") results))))
+      (rcirc-styles-insert-color "green" nil))
+    (should (cl-equalp results expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles-insert-attribute-return nil
+  "Should return a correct attribute code given a valid input."
+  (let ((expected '(""))
+        results)
+    (cl-letf (((symbol-function #'insert)
+               #'(lambda (&rest vals)
+                   (push (mapconcat #'identity vals "") results))))
+      (rcirc-styles-insert-attribute "bold"))
+    (should (equal results expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--read-attribute-require-value nil
+  "Should require a valid input."
+  (let ((args '("bogus" "bold"))
+        (expected "bold")
+        result)
+    (cl-letf (((symbol-function #'completing-read)
+               #'(lambda (&rest ignore) (pop args))))
+      (setq result (rcirc-styles--read-attribute)))
+    (should (equal result expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--read-color-require-valid nil
+  "Should not accept an invalid color name."
+  (let ((args '("bogus" "green"))
+        (expected "green")
+        result)
+    (cl-letf (((symbol-function #'completing-read)
+               #'(lambda (&rest ignore) (pop args))))
+      (setq result (rcirc-styles--read-color "foo")))
+    (should (string= result expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--read-color-require-value nil
+  "Should not accept an empty color name without allow-empty."
+  (let ((args '("" "green"))
+        (expected "green")
+        result)
+    (cl-letf (((symbol-function #'completing-read)
+               #'(lambda (&rest ignore) (pop args))))
+      (setq result (rcirc-styles--read-color "foo")))
+    (should (string= result expected))))
+
+(ert-deftest rcirc-styles-tests/rcirc-styles--read-color-allow-empty nil
+  "Should accept an empty color name with allow-empty."
+  (let ((args '("" "green"))
+        (expected nil)
+        result)
+    (cl-letf (((symbol-function #'completing-read)
+               #'(lambda (&rest ignore) (pop args))))
+      (setq result (rcirc-styles--read-color "foo" t)))
+    (should (string= result expected))))
+
 ;; rcirc-styles-toggle-preview.
 
 (ert-deftest rcirc-styles-tests/rcirc-styles-preview-only-in-rcirc nil
