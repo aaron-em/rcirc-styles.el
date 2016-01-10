@@ -475,7 +475,8 @@ values."
     (while (not (rassoc (intern val) rcirc-styles-attribute-alist))
       (setq val (completing-read
                  "Attribute: "
-                 (mapcar #'cdr rcirc-styles-attribute-alist) nil t)))
+                 (mapcar #'(lambda (pair) (symbol-name (cdr pair)))
+                         rcirc-styles-attribute-alist) nil t)))
     val))
 
 (defun rcirc-styles-insert-attribute (attr)
