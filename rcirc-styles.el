@@ -144,7 +144,7 @@ mind when invoked outside that context."
          ranges
          ;; the current foreground and background colors, if any
          fg bg
-         
+         ;; which kind of specification, if any, we found here
          found-fg found-bg)
 
     ;; begin from the start of the new message
@@ -197,6 +197,7 @@ mind when invoked outside that context."
                 ;; move point past it
                 (forward-char (1+ (length (match-string 1))))))
 
+          ;; if we have a bare ^C, treat it like ^O (discontinue color specs)
           (if (and (not found-fg)
                    (not found-bg))
                    (progn
@@ -376,11 +377,13 @@ background BG.
 When called interactively, prompt for both values, providing
 completion over known values."
   (interactive (list
-                (rcirc-styles--read-color "Foreground")
+                (rcirc-styles--read-color "Foreground" t)
                 (rcirc-styles--read-color "Background" t)))
-  (insert "\C-c"
+  (insert "\C-c")
+  (and (not (null fg))
+       (insert
           (number-to-string
-           (cl-position fg rcirc-styles-color-vector :test #'string=)))
+           (cl-position fg rcirc-styles-color-vector :test #'string=))))
   (and (not (null bg))
        (insert
         ","
