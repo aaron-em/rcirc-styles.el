@@ -521,21 +521,24 @@ state. Don't do that."
   (when (and (not rcirc-styles-previewing)
              (not rcirc-styles-previewed-input)
              (< rcirc-prompt-end-marker (point-max)))
-    (let (input preview)
+    (let (input
+          preview
+          (preview-readonly-message
+           (format "Previewing styled input.  Type %s to continue editing."
+                   (key-description (this-command-keys)))))
       (goto-char rcirc-prompt-end-marker)
       (setq input (buffer-substring (point) (point-max)))
       (with-temp-buffer
         (insert input)
         (rcirc-styles-markup-styles)
-        (setq preview
-              (propertize (buffer-substring (point-min) (point-max))
-                          'read-only "In preview mode - C-c C-s C-p to continue editing")))
+        (setq preview (propertize (buffer-substring (point-min) (point-max))
+                                  'read-only preview-readonly-message)))
       (goto-char rcirc-prompt-end-marker)
       (delete-region (point) (point-max))
       (insert preview)
       (setq rcirc-styles-previewed-input input)
       (setq rcirc-styles-previewing t)
-      (message "Previewing styled input - C-c C-s C-p to continue editing"))))
+      (message "%s" preview-readonly-message))))
 
 (defun rcirc-styles--hide-preview nil
   "Take the current rcirc buffer out of preview mode.
@@ -551,7 +554,8 @@ state. Don't do that."
     (setq inhibit-read-only nil)
     (setq rcirc-styles-previewed-input nil)
     (setq rcirc-styles-previewing nil)
-    (message "Editing input - C-c C-s C-p to preview styles")))
+    (message "Editing input.  Type %s to preview styles."
+             (key-description (this-command-keys)))))
 
 ;;
 ;; Keymap definition and bindings; administrative etc.
